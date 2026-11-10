@@ -40,7 +40,12 @@ input,select{width:100%;border:1px solid #d7deea;border-radius:11px;padding:11px
 <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
-<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v5</span></header>
+<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v6</span></header>
+<section class="card" id="cloudCard">
+ <h2 class="sectiontitle">クラウドバックアップ</h2>
+ <div class="row" style="flex-wrap:wrap"><button class="primary" id="googleLogin">Googleでログイン</button><button id="googleLogout" class="hidden">ログアウト</button></div>
+ <p class="small" id="cloudStatus" aria-live="polite">未ログイン：この端末内に保存されています。Googleログインするとクラウド同期できます。</p>
+</section>
 <section class="card">
  <div class="monthbar"><button id="prev">‹</button><strong id="monthLabel"></strong><div class="nav"><button id="today">今日</button><button id="next">›</button></div></div>
  <div class="week"><div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div></div>
@@ -95,7 +100,67 @@ input,select{width:100%;border:1px solid #d7deea;border-radius:11px;padding:11px
  <div class="row"><button id="export">データを書き出す</button><button id="importBtn">バックアップを復元</button><input type="file" id="importFile" accept="application/json" class="hidden"></div>
  <p class="small">予定・個別勤務変更はこのブラウザ内に自動保存されます。端末変更やブラウザのデータ削除に備えて、定期的にバックアップしてください。</p>
 </section>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL='https://zzrmwjrzrslhwryqyleh.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_tQKSz8TahOJ8HApvq5U-IQ_rJZzsMxY';
+const supabaseClient=window.supabase?.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const cloudStatusEl=document.getElementById('cloudStatus');
+const loginBtn=document.getElementById('googleLogin');
+const logoutBtn=document.getElementById('googleLogout');
+let cloudUser=null, cloudReady=false, cloudBusy=false, syncTimer=null;
+function setCloudStatus(message){if(cloudStatusEl)cloudStatusEl.textContent=message;}
+function hasLocalData(obj){return !!((obj.events||[]).length||Object.keys(obj.overrides||{}).length||(obj.cycleChanges||[]).length);}
+function cleanPayload(obj){return {events:Array.isArray(obj.events)?obj.events:[],overrides:obj.overrides&&typeof obj.overrides==='object'?obj.overrides:{},cycleChanges:Array.isArray(obj.cycleChanges)?obj.cycleChanges:[]};}
+async function uploadCloud(){
+ if(!supabaseClient||!cloudUser||!cloudReady||cloudBusy)return;
+ cloudBusy=true;setCloudStatus('クラウドに保存中…');
+ try{
+  const payload=cleanPayload(data);
+  const {error}=await supabaseClient.from('user_data').upsert({user_id:cloudUser.id,payload,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  if(error)throw error;
+  setCloudStatus('✓ Googleログイン済み・クラウドに自動保存されています');
+ }catch(err){console.error('Cloud sync failed',err);setCloudStatus('クラウド保存に失敗しました。端末内のデータは保持されています。通信を確認して再ログインしてください。');}
+ finally{cloudBusy=false;}
+}
+function scheduleCloudSave(){if(!cloudReady||!cloudUser)return;clearTimeout(syncTimer);syncTimer=setTimeout(uploadCloud,700);}
+async function handleAuthSession(session){
+ const user=session?.user||null;
+ if(!user){cloudUser=null;cloudReady=false;loginBtn?.classList.remove('hidden');logoutBtn?.classList.add('hidden');setCloudStatus('未ログイン：この端末内に保存されています。Googleログインするとクラウド同期できます。');return;}
+ if(cloudUser?.id===user.id&&cloudReady)return;
+ cloudUser=user;cloudReady=false;loginBtn?.classList.add('hidden');logoutBtn?.classList.remove('hidden');setCloudStatus('ログイン確認中…');
+ try{
+  const {data:row,error}=await supabaseClient.from('user_data').select('payload,updated_at').eq('user_id',user.id).maybeSingle();
+  if(error)throw error;
+  const local=cleanPayload(data);
+  if(!row){
+   data=local;persist();cloudReady=true;await uploadCloud();
+   setCloudStatus('✓ 初回バックアップ完了！この端末のデータをクラウドに保存しました。');
+  }else{
+   const remote=cleanPayload(row.payload||{});
+   if(hasLocalData(local)&&JSON.stringify(local)!==JSON.stringify(remote)){
+    const useLocal=confirm(`このGoogleアカウントには既存のクラウドデータがあります。\n\n「OK」：このiPhoneのデータでクラウドを更新\n「キャンセル」：クラウドのデータをこのiPhoneに読み込む\n\nどちらかを選んでください。`);
+    if(useLocal){data=local;persist();cloudReady=true;await uploadCloud();}
+    else{data=remote;localStorage.setItem(STORAGE_KEY,JSON.stringify(data));cloudReady=true;render();}
+   }else{
+    data=remote;localStorage.setItem(STORAGE_KEY,JSON.stringify(data));cloudReady=true;render();
+   }
+   setCloudStatus('✓ Googleログイン済み・クラウド同期が有効です');
+  }
+ }catch(err){console.error('Cloud restore failed',err);cloudReady=false;setCloudStatus('ログインはできましたが同期に失敗しました。端末内データはそのまま残っています。');}
+}
+loginBtn?.addEventListener('click',async()=>{
+ if(!supabaseClient){alert('認証ライブラリを読み込めませんでした。通信を確認してね。');return;}
+ loginBtn.disabled=true;setCloudStatus('Googleログイン画面を開いています…');
+ const {error}=await supabaseClient.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+ if(error){console.error(error);setCloudStatus('ログインを開始できませんでした。もう一度試してください。');loginBtn.disabled=false;}
+});
+logoutBtn?.addEventListener('click',async()=>{if(!confirm('ログアウトする？端末内のデータは消えません。'))return;await supabaseClient.auth.signOut();});
+if(supabaseClient){
+ supabaseClient.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>handleAuthSession(session),0);});
+ supabaseClient.auth.getSession().then(({data})=>handleAuthSession(data.session));
+}else{setCloudStatus('認証ライブラリを読み込めませんでした。インターネット接続を確認してください。');}
+
 const STORAGE_KEY='shiftmate_v3_data';
 const BASE=new Date(2026,10,11); // 2026-11-11 is cycle day 1
 const EXCEPTION_SEEDS=[new Date(2026,10,14),new Date(2026,10,22)];
@@ -126,7 +191,7 @@ function baseShift(d){
  return shift;
 }
 function shiftFor(d){return data.overrides[key(d)] ?? baseShift(d)}
-function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}
+function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data));scheduleCloudSave()}
 function render(){
  renderCycleHistory();
  document.getElementById('monthLabel').textContent=`${view.getFullYear()}年 ${view.getMonth()+1}月`;
