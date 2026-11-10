@@ -65,7 +65,12 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <h2 class="sectiontitle">クラウドバックアップ</h2>
  <div class="row" style="flex-wrap:wrap"><button class="primary" id="googleLogin">Googleでログイン</button><button id="googleLogout" class="hidden">ログアウト</button></div>
- <p class="small" id="cloudStatus" aria-live="polite">未ログイン：この端末内に保存されています。Googleログインするとクラウド同期できます。</p>
+ <p class="small" id="cloudStatus" aria-live="polite">未ログイン：この端末内に保存されています。Googleログインするとクラウド同期と自動バックアップが使えます。</p>
+ <div style="border-top:1px solid #edf0f5;margin-top:12px;padding-top:12px">
+  <div class="row" style="flex-wrap:wrap"><button id="refreshBackups">バックアップ履歴を確認</button><button class="primary" id="restoreBackup">選択したバックアップを復元</button></div>
+  <select id="backupSelect" style="margin-top:8px" aria-label="復元するバックアップ"><option value="">バックアップ履歴を読み込んでね</option></select>
+  <p class="small" id="backupStatus" aria-live="polite">クラウド同期中、変更前のデータを自動でバックアップします。</p>
+ </div>
 </section>
 <section class="card">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
@@ -132,6 +137,10 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
 <section class="card" id="versionHistory">
  <h2 class="sectiontitle">更新履歴</h2>
  <div class="item" style="display:block">
+  <strong>ver 1.7 - クラウド自動バックアップ</strong>
+  <small>クラウドデータの更新前に旧データを自動保存し、履歴から復元できるようにしました。</small>
+ </div>
+ <div class="item" style="display:block">
   <strong>ver 1.6 - 更新履歴を追加</strong>
   <small>これまでの改善内容をアプリ内で確認できるようにしました。</small>
  </div>
@@ -170,18 +179,54 @@ const cloudStatusEl=document.getElementById('cloudStatus');
 const loginBtn=document.getElementById('googleLogin');
 const logoutBtn=document.getElementById('googleLogout');
 let cloudUser=null, cloudReady=false, cloudBusy=false, syncTimer=null;
+const backupSelect=document.getElementById('backupSelect');
+const backupStatus=document.getElementById('backupStatus');
 function setCloudStatus(message){if(cloudStatusEl)cloudStatusEl.textContent=message;}
+function setBackupStatus(message){if(backupStatus)backupStatus.textContent=message;}
 function hasLocalData(obj){return !!((obj.events||[]).length||Object.keys(obj.overrides||{}).length||(obj.cycleChanges||[]).length);}
 function cleanPayload(obj){return {events:Array.isArray(obj.events)?obj.events:[],overrides:obj.overrides&&typeof obj.overrides==='object'?obj.overrides:{},cycleChanges:Array.isArray(obj.cycleChanges)?obj.cycleChanges:[]};}
+async function saveCloudSnapshot(payload){
+ const {error}=await supabaseClient.from('user_data_backups').insert({user_id:cloudUser.id,payload:cleanPayload(payload)});
+ if(error)throw error;
+}
+async function backupCurrentCloud(){
+ const {data:row,error}=await supabaseClient.from('user_data').select('payload').eq('user_id',cloudUser.id).maybeSingle();
+ if(error)throw error;
+ if(row?.payload)await saveCloudSnapshot(row.payload);
+}
+async function refreshBackupList(){
+ if(!supabaseClient||!cloudUser||!cloudReady){setBackupStatus('バックアップ履歴を見るにはGoogleログインが必要です。');return;}
+ setBackupStatus('バックアップ履歴を読み込み中…');
+ const {data:rows,error}=await supabaseClient.from('user_data_backups').select('id,created_at').eq('user_id',cloudUser.id).order('created_at',{ascending:false}).limit(30);
+ if(error){console.error('Backup list failed',error);setBackupStatus('履歴を読み込めませんでした。通信を確認してね。');return;}
+ backupSelect.innerHTML='';
+ if(!rows?.length){
+  const {data:current,error:currentError}=await supabaseClient.from('user_data').select('payload').eq('user_id',cloudUser.id).maybeSingle();
+  if(currentError){console.error('Initial backup check failed',currentError);backupSelect.add(new Option('まだバックアップはありません',''));setBackupStatus('初回バックアップを確認できませんでした。次回のクラウド更新時に自動保存します。');return;}
+  if(current?.payload){
+   try{await saveCloudSnapshot(current.payload);return await refreshBackupList();}
+   catch(err){console.error('Initial backup failed',err);backupSelect.add(new Option('まだバックアップはありません',''));setBackupStatus('初回バックアップを作成できませんでした。通信を確認してね。');return;}
+  }
+  backupSelect.add(new Option('まだバックアップはありません',''));setBackupStatus('クラウド上のデータが変更されると、変更前の状態が自動保存されます。');return;
+ }
+ rows.forEach(row=>{const d=new Date(row.created_at);backupSelect.add(new Option(d.toLocaleString('ja-JP')+' のバックアップ',String(row.id)));});
+ setBackupStatus(`バックアップ履歴を${rows.length}件表示しています（新しい順・最大30件）。`);
+}
 async function uploadCloud(){
  if(!supabaseClient||!cloudUser||!cloudReady||cloudBusy)return;
  cloudBusy=true;setCloudStatus('クラウドに保存中…');
  try{
   const payload=cleanPayload(data);
+  const {data:current,error:readError}=await supabaseClient.from('user_data').select('payload').eq('user_id',cloudUser.id).maybeSingle();
+  if(readError)throw readError;
+  if(current?.payload&&JSON.stringify(cleanPayload(current.payload))!==JSON.stringify(payload)){
+   await saveCloudSnapshot(current.payload);
+   setBackupStatus('✓ 変更前のクラウドデータを自動バックアップしました。');
+  }
   const {error}=await supabaseClient.from('user_data').upsert({user_id:cloudUser.id,payload,updated_at:new Date().toISOString()},{onConflict:'user_id'});
   if(error)throw error;
   setCloudStatus('✓ Googleログイン済み・クラウドに自動保存されています');
- }catch(err){console.error('Cloud sync failed',err);setCloudStatus('クラウド保存に失敗しました。端末内のデータは保持されています。通信を確認して再ログインしてください。');}
+ }catch(err){console.error('Cloud sync failed',err);setCloudStatus('クラウド保存に失敗しました。端末内のデータは保持されています。バックアップ作成にも失敗した場合、クラウドデータの上書きは行いません。');}
  finally{cloudBusy=false;}
 }
 function scheduleCloudSave(){if(!cloudReady||!cloudUser)return;clearTimeout(syncTimer);syncTimer=setTimeout(uploadCloud,700);}
@@ -207,6 +252,7 @@ async function handleAuthSession(session){
     data=remote;localStorage.setItem(STORAGE_KEY,JSON.stringify(data));cloudReady=true;render();
    }
    setCloudStatus('✓ Googleログイン済み・クラウド同期が有効です');
+   refreshBackupList();
   }
  }catch(err){console.error('Cloud restore failed',err);cloudReady=false;setCloudStatus('ログインはできましたが同期に失敗しました。端末内データはそのまま残っています。');}
 }
@@ -217,6 +263,27 @@ loginBtn?.addEventListener('click',async()=>{
  if(error){console.error(error);setCloudStatus('ログインを開始できませんでした。もう一度試してください。');loginBtn.disabled=false;}
 });
 logoutBtn?.addEventListener('click',async()=>{if(!confirm('ログアウトする？端末内のデータは消えません。'))return;await supabaseClient.auth.signOut();});
+document.getElementById('refreshBackups')?.addEventListener('click',refreshBackupList);
+document.getElementById('restoreBackup')?.addEventListener('click',async()=>{
+ if(!cloudUser||!cloudReady){alert('先にGoogleログインしてね。');return;}
+ const id=backupSelect?.value;
+ if(!id){alert('復元するバックアップを選んでね。');return;}
+ if(!confirm('選択したバックアップで現在のシフト・予定データを置き換えるよ。復元前のクラウドデータもバックアップしてから進めます。よろしい？'))return;
+ try{
+  setBackupStatus('復元前のデータを保護しています…');
+  await backupCurrentCloud();
+  const {data:row,error}=await supabaseClient.from('user_data_backups').select('payload').eq('id',Number(id)).eq('user_id',cloudUser.id).single();
+  if(error)throw error;
+  const restored=cleanPayload(row.payload||{});
+  const {error:saveError}=await supabaseClient.from('user_data').upsert({user_id:cloudUser.id,payload:restored,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  if(saveError)throw saveError;
+  data=restored;localStorage.setItem(STORAGE_KEY,JSON.stringify(data));render();
+  setCloudStatus('✓ バックアップから復元しました。');
+  setBackupStatus('復元前のデータもバックアップに保存しました。');
+  await refreshBackupList();
+  alert('バックアップを復元したよ！');
+ }catch(err){console.error('Backup restore failed',err);setBackupStatus('復元に失敗しました。現在の端末データはそのままです。');alert('復元できませんでした。通信状態を確認してね。');}
+});
 if(supabaseClient){
  supabaseClient.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>handleAuthSession(session),0);});
  supabaseClient.auth.getSession().then(({data})=>handleAuthSession(data.session));
