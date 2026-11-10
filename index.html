@@ -232,7 +232,24 @@ function renderCycleHistory(){
  const el=document.getElementById('cycleHistory');
  if(!el)return;
  const changes=[...(data.cycleChanges||[])].sort((a,b)=>a.date.localeCompare(b.date));
- el.innerHTML=changes.length?'<b>登録済みの変更</b><br>'+changes.map(c=>`${c.date} から ${Number(c.dayIndex)+1}日目として計算`).join('<br>'):'勤務サイクルの変更はまだ登録されていません。';
+ el.innerHTML='';
+ if(!changes.length){el.textContent='勤務サイクルの変更はまだ登録されていません。';return;}
+ const heading=document.createElement('b');heading.textContent='登録済みの変更';el.appendChild(heading);
+ changes.forEach(c=>{
+  const row=document.createElement('div');
+  row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:7px';
+  const label=document.createElement('span');
+  label.textContent=`${c.date} から ${Number(c.dayIndex)+1}日目として計算`;
+  const remove=document.createElement('button');
+  remove.type='button';remove.className='danger';remove.textContent='この変更を取り消す';
+  remove.addEventListener('click',()=>{
+   if(!confirm(`${c.date}からの周期変更を取り消すよ。よろしい？\nほかの日付の変更・予定・個別勤務変更はそのまま残るよ。`))return;
+   data.cycleChanges=(data.cycleChanges||[]).filter(x=>!(x.date===c.date&&Number(x.dayIndex)===Number(c.dayIndex)));
+   persist();render();
+   alert(`${c.date}からの周期変更を取り消したよ。`);
+  });
+  row.append(label,remove);el.appendChild(row);
+ });
 }
 function saveCycleChange(date,dayIndex){
  data.cycleChanges=(data.cycleChanges||[]).filter(c=>c.date!==date);
