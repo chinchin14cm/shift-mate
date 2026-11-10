@@ -31,6 +31,14 @@ input,select{width:100%;border:1px solid #d7deea;border-radius:11px;padding:11px
 .actions{display:flex;gap:6px}.actions button{padding:7px 9px;font-size:12px}
 .notice{background:#eff6ff;border-radius:12px;padding:10px 12px;font-size:12px;color:#1e40af;line-height:1.55}
 .hidden{display:none!important}
+#orderToolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#orderToolbar .small{flex:1;min-width:150px}
+.order-controls{display:none;justify-content:flex-end;gap:6px;margin:-3px 0 10px;padding-bottom:9px;border-bottom:1px dashed #cbd5e1}
+body.reorder-mode .order-controls{display:flex}
+.order-controls button{min-width:48px;padding:9px 12px;font-size:15px}
+body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
+.order-controls .order-label{margin-right:auto;align-self:center;font-size:12px;color:#64748b;font-weight:700}
+
 @media(max-width:390px){body{padding:12px 9px}.day{min-height:65px;padding:5px 2px}.shift{font-size:9px}.eventdot{font-size:8px}}
 </style>
 <link rel="manifest" href="./manifest.webmanifest">
@@ -41,18 +49,27 @@ input,select{width:100%;border:1px solid #d7deea;border-radius:11px;padding:11px
 </head>
 <body>
 <header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v6</span></header>
+<section class="card" id="orderToolbar">
+ <button class="primary" id="startReorder">並び順を編集</button>
+ <span class="small" id="orderHint">カードの表示順を自分好みに変更できます。</span>
+ <button class="primary hidden" id="confirmReorder">決定</button>
+ <button id="cancelReorder" class="hidden">キャンセル</button>
+</section>
 <section class="card" id="cloudCard">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <h2 class="sectiontitle">クラウドバックアップ</h2>
  <div class="row" style="flex-wrap:wrap"><button class="primary" id="googleLogin">Googleでログイン</button><button id="googleLogout" class="hidden">ログアウト</button></div>
  <p class="small" id="cloudStatus" aria-live="polite">未ログイン：この端末内に保存されています。Googleログインするとクラウド同期できます。</p>
 </section>
 <section class="card">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <div class="monthbar"><button id="prev">‹</button><strong id="monthLabel"></strong><div class="nav"><button id="today">今日</button><button id="next">›</button></div></div>
  <div class="week"><div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div></div>
  <div class="days" id="calendar"></div>
  <p class="small">日付をタップすると、その日の勤務・予定を確認／編集できます。</p>
 </section>
 <section class="card">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <h2 class="sectiontitle" id="selectedTitle">日付を選択</h2>
  <div id="selectedInfo" class="small"></div>
  <div style="height:10px"></div>
@@ -65,6 +82,7 @@ input,select{width:100%;border:1px solid #d7deea;border-radius:11px;padding:11px
  <div id="eventList"></div>
 </section>
 <section class="card">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <h2 class="sectiontitle">勤務ルール</h2>
  <div class="notice">
  基本周期：日勤 → 夜勤 → 明け → 日勤 → 夜勤 → 明け → 休み → 休み（8日周期）。班替え時は基準日を変更できます。<br>
@@ -75,6 +93,7 @@ input,select{width:100%;border:1px solid #d7deea;border-radius:11px;padding:11px
 </section>
 
 <section class="card">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <h2 class="sectiontitle">勤務サイクルの変更</h2>
  <p class="small">班替えなどで8日周期の開始位置が変わったら、変更開始日と、その日の周期上の位置を指定してください。変更日より前の勤務・個人予定はそのまま残ります。</p>
  <div class="row"><input type="date" id="cycleDate"><select id="cycleDay">
@@ -86,6 +105,7 @@ input,select{width:100%;border:1px solid #d7deea;border-radius:11px;padding:11px
 </section>
 
 <section class="card">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <h2 class="sectiontitle">チャッピーに話しかける</h2>
  <div class="small" style="margin-bottom:10px">予定の登録・削除、勤務変更、休みの確認に加え、「11月20日から周期2日目として変更」のように勤務周期も変更できます。</div>
  <div id="chatLog" style="background:#f7f8fc;border-radius:12px;padding:10px;min-height:58px;max-height:220px;overflow:auto;margin-bottom:10px">
@@ -96,6 +116,7 @@ input,select{width:100%;border:1px solid #d7deea;border-radius:11px;padding:11px
 </section>
 
 <section class="card">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <h2 class="sectiontitle">バックアップ</h2>
  <div class="row"><button id="export">データを書き出す</button><button id="importBtn">バックアップを復元</button><input type="file" id="importFile" accept="application/json" class="hidden"></div>
  <p class="small">予定・個別勤務変更はこのブラウザ内に自動保存されます。端末変更やブラウザのデータ削除に備えて、定期的にバックアップしてください。</p>
@@ -330,6 +351,51 @@ document.getElementById('chatSend').onclick=runChat;
 document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')runChat()});
 
 render();
+
+// カードの並べ替え（端末内に保存。勤務データ・クラウド同期には影響しません）
+(function setupCardReordering(){
+ const ORDER_KEY='shiftmate_section_order_v1';
+ const toolbar=document.getElementById('orderToolbar');
+ const cards=()=>Array.from(document.querySelectorAll('body > section.card:not(#orderToolbar)'));
+ const start=document.getElementById('startReorder');
+ const confirm=document.getElementById('confirmReorder');
+ const cancel=document.getElementById('cancelReorder');
+ const hint=document.getElementById('orderHint');
+ let originalOrder=[];
+ function applySavedOrder(){
+  let saved=[];try{saved=JSON.parse(localStorage.getItem(ORDER_KEY)||'[]')}catch(e){}
+  const current=cards();
+  const byId=new Map(current.map((el,i)=>[el.id||'card-'+i,el]));
+  let anchor=toolbar;
+  saved.forEach(id=>{const el=byId.get(id);if(el){anchor.after(el);anchor=el;byId.delete(id)}});
+  byId.forEach(el=>{anchor.after(el);anchor=el});
+ }
+ function cardKey(el){return el.id||'card-'+cards().indexOf(el)}
+ function refreshButtons(){
+  const list=cards();
+  list.forEach((el,i)=>{
+   const up=el.querySelector('.move-up'),down=el.querySelector('.move-down');
+   if(up)up.disabled=i===0;
+   if(down)down.disabled=i===list.length-1;
+  });
+ }
+ function setMode(on){
+  document.body.classList.toggle('reorder-mode',on);
+  start.classList.toggle('hidden',on);confirm.classList.toggle('hidden',!on);cancel.classList.toggle('hidden',!on);
+  hint.textContent=on?'↑↓で順番を調整して「決定」を押してね。':'カードの表示順を自分好みに変更できます。';
+  refreshButtons();
+ }
+ cards().forEach(el=>{
+  const up=el.querySelector('.move-up'),down=el.querySelector('.move-down');
+  up.addEventListener('click',()=>{const prev=el.previousElementSibling;if(prev&&prev!==toolbar)prev.before(el);refreshButtons()});
+  down.addEventListener('click',()=>{const next=el.nextElementSibling;if(next&&next!==toolbar)next.after(el);refreshButtons()});
+ });
+ start.addEventListener('click',()=>{originalOrder=cards().slice();setMode(true)});
+ cancel.addEventListener('click',()=>{let anchor=toolbar;originalOrder.forEach(el=>{anchor.after(el);anchor=el});setMode(false)});
+ confirm.addEventListener('click',()=>{localStorage.setItem(ORDER_KEY,JSON.stringify(cards().map(cardKey)));setMode(false)});
+ applySavedOrder();
+})();
+
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{})); }
 </script>
 </body>
