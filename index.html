@@ -38,6 +38,12 @@ body.reorder-mode .order-controls{display:flex}
 .order-controls button{min-width:48px;padding:9px 12px;font-size:15px}
 body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
 .order-controls .order-label{margin-right:auto;align-self:center;font-size:12px;color:#64748b;font-weight:700}
+.card-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.card-heading .sectiontitle{margin:0}
+.explain-toggle{padding:6px 10px;font-size:12px;font-weight:650;white-space:nowrap;color:#475569;background:#eef2f7;border-radius:999px}
+.description{display:none!important}
+.description.is-open{display:block!important}
+.description p:last-child{margin-bottom:0}
 
 @media(max-width:390px){body{padding:12px 9px}.day{min-height:65px;padding:5px 2px}.shift{font-size:9px}.eventdot{font-size:8px}}
 </style>
@@ -63,19 +69,20 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
 </section>
 <section class="card">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
+ <div class="card-heading"><span class="sectiontitle">カレンダー</span><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
  <div class="monthbar"><button id="prev">‹</button><strong id="monthLabel"></strong><div class="nav"><button id="today">今日</button><button id="next">›</button></div></div>
  <div class="week"><div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div></div>
  <div class="days" id="calendar"></div>
- <p class="small">日付をタップすると、その日の勤務・予定を確認／編集できます。</p>
+ <p class="small description">日付をタップすると、その日の勤務・予定を確認／編集できます。</p>
 </section>
 <section class="card">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
- <h2 class="sectiontitle" id="selectedTitle">日付を選択</h2>
+ <div class="card-heading"><h2 class="sectiontitle" id="selectedTitle">日付を選択</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
  <div id="selectedInfo" class="small"></div>
  <div style="height:10px"></div>
  <div class="sectiontitle">勤務を個別に変更</div>
  <div class="row"><select id="shiftOverride"><option value="">基本シフトに戻す</option><option>日勤</option><option>夜勤・半泊</option><option>夜勤・全泊</option><option>明け</option><option>休み</option></select><button class="primary" id="saveShift">勤務を保存</button></div>
- <p class="small">個別変更はその日だけに適用され、8日周期はずれません。</p>
+ <p class="small description">個別変更はその日だけに適用され、8日周期はずれません。</p>
  <div style="height:10px"></div>
  <div class="sectiontitle">プライベートの予定を追加</div>
  <div class="row"><input id="eventTitle" placeholder="例：デート、通院、誕生日"><button class="primary" id="addEvent">予定を追加</button></div>
@@ -83,43 +90,76 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
 </section>
 <section class="card">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
- <h2 class="sectiontitle">勤務ルール</h2>
- <div class="notice">
+ <div class="card-heading"><h2 class="sectiontitle">勤務ルール</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
+ <div class="notice description">
  基本周期：日勤 → 夜勤 → 明け → 日勤 → 夜勤 → 明け → 休み → 休み（8日周期）。班替え時は基準日を変更できます。<br>
  夜勤開始が月〜金：半泊／土日：全泊<br><br>
  <b>追加ルール：</b>11月14日・22日を起点に、56日ごとに該当する日勤を休みにします。11月30日は日勤のままです。
  </div>
- <p class="small">例外休み：2026/11/14・11/22・2027/1/9・1/17・3/6・3/14 …</p>
+ <p class="small description">例外休み：2026/11/14・11/22・2027/1/9・1/17・3/6・3/14 …</p>
 </section>
 
 <section class="card">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
- <h2 class="sectiontitle">勤務サイクルの変更</h2>
- <p class="small">班替えなどで8日周期の開始位置が変わったら、変更開始日と、その日の周期上の位置を指定してください。変更日より前の勤務・個人予定はそのまま残ります。</p>
+ <div class="card-heading"><h2 class="sectiontitle">勤務サイクルの変更</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
+ <p class="small description">班替えなどで8日周期の開始位置が変わったら、変更開始日と、その日の周期上の位置を指定してください。変更日より前の勤務・個人予定はそのまま残ります。</p>
  <div class="row"><input type="date" id="cycleDate"><select id="cycleDay">
   <option value="0">1日目：日勤</option><option value="1">2日目：夜勤</option><option value="2">3日目：明け</option><option value="3">4日目：日勤</option><option value="4">5日目：夜勤</option><option value="5">6日目：明け</option><option value="6">7日目：休み</option><option value="7">8日目：休み</option>
  </select></div>
  <div class="row" style="margin-top:8px"><button class="primary" id="saveCycle">この日から新しい周期にする</button></div>
  <div id="cycleHistory" class="small" style="margin-top:10px"></div>
- <p class="small">56日ごとの特別休日ルールは変更せず、従来の日付を基準に適用します。</p>
+ <p class="small description">56日ごとの特別休日ルールは変更せず、従来の日付を基準に適用します。</p>
 </section>
 
 <section class="card">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
- <h2 class="sectiontitle">チャッピーに話しかける</h2>
- <div class="small" style="margin-bottom:10px">予定の登録・削除、勤務変更、休みの確認に加え、「11月20日から周期2日目として変更」のように勤務周期も変更できます。</div>
+ <div class="card-heading"><h2 class="sectiontitle">チャッピーに話しかける</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
+ <div class="small description" style="margin-bottom:10px">予定の登録・削除、勤務変更、休みの確認に加え、「11月20日から周期2日目として変更」のように勤務周期も変更できます。</div>
  <div id="chatLog" style="background:#f7f8fc;border-radius:12px;padding:10px;min-height:58px;max-height:220px;overflow:auto;margin-bottom:10px">
   <div class="small">こんにちは！「11月20日にデート」みたいに話しかけてね。</div>
  </div>
  <div class="row"><input id="chatInput" placeholder="例：11月20日にデート"><button class="primary" id="chatSend">送信</button></div>
- <p class="small" style="margin-bottom:0">※現在はアプリ内の簡易コマンド解析です。ChatGPT本体とのAPI接続はまだ行っていません。</p>
+ <p class="small description" style="margin-bottom:0">※現在はアプリ内の簡易コマンド解析です。ChatGPT本体とのAPI接続はまだ行っていません。</p>
 </section>
 
 <section class="card">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
- <h2 class="sectiontitle">バックアップ</h2>
+ <div class="card-heading"><h2 class="sectiontitle">バックアップ</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
  <div class="row"><button id="export">データを書き出す</button><button id="importBtn">バックアップを復元</button><input type="file" id="importFile" accept="application/json" class="hidden"></div>
- <p class="small">予定・個別勤務変更はこのブラウザ内に自動保存されます。端末変更やブラウザのデータ削除に備えて、定期的にバックアップしてください。</p>
+ <p class="small description">予定・個別勤務変更はこのブラウザ内に自動保存されます。端末変更やブラウザのデータ削除に備えて、定期的にバックアップしてください。</p>
+</section>
+
+<section class="card" id="versionHistory">
+ <h2 class="sectiontitle">更新履歴</h2>
+ <div class="item" style="display:block">
+  <strong>ver 1.6 - 更新履歴を追加</strong>
+  <small>これまでの改善内容をアプリ内で確認できるようにしました。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.5 - コンパクト表示</strong>
+  <small>各カードの説明文を折りたたみ式に変更。必要なときだけ「説明」ボタンで表示できます。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.4 - カードの並べ替え</strong>
+  <small>編集モードでカードを上下に移動し、決定・キャンセルできるようにしました。表示順は端末に保存されます。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.3 - バックアップと変更履歴</strong>
+  <small>勤務サイクル変更の取り消し、JSONバックアップの書き出し・復元に対応しました。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.2 - Googleクラウド同期</strong>
+  <small>GoogleログインとSupabaseによる勤務・予定データのクラウド保存に対応しました。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.1 - 勤務ルールの拡張</strong>
+  <small>8日周期、56日ごとの特別休日、日付ごとの勤務変更、周期変更に対応しました。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.0 - 初期版</strong>
+  <small>勤務カレンダーとプライベート予定の登録・確認機能を作成しました。</small>
+ </div>
+ <p class="small" style="margin:10px 0 0">※今後のアップデートも、新しいバージョンを一番上に追加していきます。</p>
 </section>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -352,11 +392,25 @@ document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='
 
 render();
 
+// 説明文は初期状態で折りたたみ、各カードごとに開閉します。
+document.querySelectorAll('body > section.card:not(#orderToolbar)').forEach(card=>{
+ const toggle=card.querySelector('.explain-toggle');
+ if(!toggle)return;
+ const descriptions=Array.from(card.querySelectorAll('.description'));
+ if(!descriptions.length){toggle.classList.add('hidden');return;}
+ toggle.addEventListener('click',()=>{
+  const open=toggle.getAttribute('aria-expanded')!=='true';
+  toggle.setAttribute('aria-expanded',String(open));
+  toggle.textContent=open?'説明を閉じる':'説明';
+  descriptions.forEach(el=>el.classList.toggle('is-open',open));
+ });
+});
+
 // カードの並べ替え（端末内に保存。勤務データ・クラウド同期には影響しません）
 (function setupCardReordering(){
  const ORDER_KEY='shiftmate_section_order_v1';
  const toolbar=document.getElementById('orderToolbar');
- const cards=()=>Array.from(document.querySelectorAll('body > section.card:not(#orderToolbar)'));
+ const cards=()=>Array.from(document.querySelectorAll('body > section.card:not(#orderToolbar):not(#versionHistory)'));
  const start=document.getElementById('startReorder');
  const confirm=document.getElementById('confirmReorder');
  const cancel=document.getElementById('cancelReorder');
