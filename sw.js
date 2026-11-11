@@ -1,4 +1,4 @@
-const CACHE = 'shiftmate-shell-v14-chat-time-calendar';
+const CACHE = 'shiftmate-shell-v15-uniform-card-gaps';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
