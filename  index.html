@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#172554">
+<title>ShiftMate</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;color:#172033;background:#f4f6fb}
+*{box-sizing:border-box}body{margin:0;padding:16px 14px 36px;max-width:760px;margin-inline:auto}
+header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 16px}
+h1{font-size:25px;margin:0;letter-spacing:-.5px}.sub{font-size:12px;color:#64748b;margin-top:3px}
+button,input,select{font:inherit}button{border:0;border-radius:12px;padding:10px 13px;background:#e8edf7;color:#1e293b;font-weight:650}
+.card{background:white;border-radius:18px;padding:15px;margin:12px 0;box-shadow:0 4px 18px #0f172a0b}
+.monthbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.monthbar strong{font-size:19px}.nav{display:flex;gap:7px}
+.week,.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.week div{text-align:center;font-size:11px;color:#64748b;padding:5px 0}
+.day{min-height:72px;border-radius:11px;background:#f7f8fc;padding:6px 4px;text-align:left;position:relative;border:1px solid transparent;cursor:pointer;overflow:hidden}
+.day.dim{opacity:.35}.day.selected{border:2px solid #2563eb;background:#eff6ff}
+.num{font-size:13px;font-weight:700}.shift{font-size:10px;font-weight:700;margin-top:5px;white-space:nowrap}
+.eventdot{font-size:9px;color:#7c3aed;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}
+.s-day{color:#2563eb}.s-night{color:#b45309}.s-after{color:#64748b}.s-off{color:#059669}
+.row{display:flex;gap:8px;align-items:center}.row>*{min-width:0}.row input,.row select{flex:1}
+input,select{width:100%;border:1px solid #d7deea;border-radius:11px;padding:11px;background:white;color:#172033}
+.primary{background:#2563eb;color:white}.danger{background:#fee2e2;color:#991b1b}
+.small{font-size:12px;color:#64748b;line-height:1.55}.sectiontitle{font-size:15px;font-weight:750;margin:0 0 10px}
+.pill{display:inline-block;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:700;background:#eef2ff;color:#3730a3}
+.item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-top:1px solid #edf0f5}
+.item:first-child{border-top:0}.item strong{font-size:14px}.item small{display:block;color:#64748b;margin-top:3px}
+.actions{display:flex;gap:6px}.actions button{padding:7px 9px;font-size:12px}
+.notice{background:#eff6ff;border-radius:12px;padding:10px 12px;font-size:12px;color:#1e40af;line-height:1.55}
+.hidden{display:none!important}
+#orderToolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#orderToolbar .small{flex:1;min-width:150px}
+.order-controls{display:none;justify-content:flex-end;gap:6px;margin:-3px 0 10px;padding-bottom:9px;border-bottom:1px dashed #cbd5e1}
+body.reorder-mode .order-controls{display:flex}
+.order-controls button{min-width:48px;padding:9px 12px;font-size:15px}
+body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
+.order-controls .order-label{margin-right:auto;align-self:center;font-size:12px;color:#64748b;font-weight:700}
+.card-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.card-heading .sectiontitle{margin:0}
+.explain-toggle{padding:6px 10px;font-size:12px;font-weight:650;white-space:nowrap;color:#475569;background:#eef2f7;border-radius:999px}
+.description{display:none!important}
+.description.is-open{display:block!important}
+.description p:last-child{margin-bottom:0}
+
+@media(max-width:390px){body{padding:12px 9px}.day{min-height:65px;padding:5px 2px}.shift{font-size:9px}.eventdot{font-size:8px}}
+/* ver 1.8：ホーム画面レイアウト・カードサイズ調整 */
+body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-flow:row dense;column-gap:10px;align-items:start}
+header,#orderToolbar,#chatCard,#calendarCard,#versionHistory{grid-column:1/-1}
+.card{min-width:0;margin:6px 0}
+.card.size-small{grid-column:span 1;padding:11px}
+.card.size-medium{grid-column:span 1;padding:15px}
+.card.size-large{grid-column:1/-1;padding:18px}
+#chatCard,#calendarCard{grid-column:1/-1}
+#orderToolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#orderToolbar button{padding:8px 10px;font-size:12px}
+#orderToolbar .small{flex:1;min-width:150px}
+.order-controls button{min-width:36px;padding:7px 9px;font-size:13px}
+.size-controls{display:flex;gap:4px;margin-left:6px}
+.size-controls button{min-width:32px!important;padding:6px 7px!important;font-size:11px!important}
+.size-controls button.active{background:#2563eb;color:#fff}
+.chat-history-toggle{padding:6px 10px;font-size:12px;font-weight:650;white-space:nowrap;color:#475569;background:#eef2f7;border-radius:999px}
+#chatLog{max-height:180px;overflow:auto}
+#chatLog.chat-log-collapsed{display:none}
+#chatCard .row{gap:6px}
+#chatInput{padding:10px}
+#chatSend{padding:9px 12px;white-space:nowrap}
+#calendarCard .monthbar{margin-bottom:6px}
+#calendarCard .monthbar strong{font-size:17px}
+#calendarCard .week,#calendarCard .days{gap:3px}
+#calendarCard .week div{padding:3px 0}
+#calendarCard .day{min-height:42px;padding:3px 2px;border-radius:8px}
+#calendarCard .num{font-size:11px}
+#calendarCard .shift{font-size:8px;margin-top:2px}
+#calendarCard .eventdot{font-size:7px;margin-top:1px}
+.payment-mark{font-size:7px;font-weight:850;line-height:1.15;margin-top:1px;white-space:nowrap;overflow:hidden}
+.payment-mark.payday{color:#0f766e}
+.payment-mark.bonus{color:#b45309}
+@media(max-width:480px){body{padding:9px 8px 26px;column-gap:7px}.card{border-radius:15px}#calendarCard .day{min-height:41px}#calendarCard .week,#calendarCard .days{gap:2px}}
+@media(max-width:350px){body{grid-template-columns:1fr}.card.size-small,.card.size-medium{grid-column:1/-1}}
+</style>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ShiftMate">
+<link rel="apple-touch-icon" href="./icon-192.png">
+</head>
+<body>
+<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.8</span></header>
+<section class="card" id="orderToolbar">
+ <button class="primary" id="startReorder">並び順を編集</button>
+ <span class="small" id="orderHint">カードの表示順を自分好みに変更できます。</span>
+ <button class="primary hidden" id="confirmReorder">決定</button>
+ <button id="cancelReorder" class="hidden">キャンセル</button>
+</section>
+<section class="card" id="cloudCard">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
+ <h2 class="sectiontitle">クラウドバックアップ</h2>
+ <div class="row" style="flex-wrap:wrap"><button class="primary" id="googleLogin">Googleでログイン</button><button id="googleLogout" class="hidden">ログアウト</button></div>
+ <p class="small" id="cloudStatus" aria-live="polite">未ログイン：この端末内に保存されています。Googleログインするとクラウド同期できます。</p>
+</section>
+<section class="card" id="calendarCard">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
+ <div class="card-heading"><span class="sectiontitle">カレンダー</span><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
+ <div class="monthbar"><button id="prev">‹</button><strong id="monthLabel"></strong><div class="nav"><button id="today">今日</button><button id="next">›</button></div></div>
+ <div class="week"><div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div></div>
+ <div class="days" id="calendar"></div>
+ <p class="small description">日付をタップすると、その日の勤務・予定を確認／編集できます。</p>
+</section>
+<section class="card" id="selectedDayCard">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
+ <div class="card-heading"><h2 class="sectiontitle" id="selectedTitle">日付を選択</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
+ <div id="selectedInfo" class="small"></div>
+ <div style="height:10px"></div>
+ <div class="sectiontitle">勤務を個別に変更</div>
+ <div class="row"><select id="shiftOverride"><option value="">基本シフトに戻す</option><option>日勤</option><option>夜勤・半泊</option><option>夜勤・全泊</option><option>明け</option><option>休み</option></select><button class="primary" id="saveShift">勤務を保存</button></div>
+ <p class="small description">個別変更はその日だけに適用され、8日周期はずれません。</p>
+ <div style="height:10px"></div>
+ <div class="sectiontitle">プライベートの予定を追加</div>
+ <div class="row"><input id="eventTitle" placeholder="例：デート、通院、誕生日"><button class="primary" id="addEvent">予定を追加</button></div>
+ <div id="eventList"></div>
+</section>
+<section class="card" id="workRulesCard">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
+ <div class="card-heading"><h2 class="sectiontitle">勤務ルール</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
+ <div class="notice description">
+ 基本周期：日勤 → 夜勤 → 明け → 日勤 → 夜勤 → 明け → 休み → 休み（8日周期）。班替え時は基準日を変更できます。<br>
+ 夜勤開始が月〜金：半泊／土日：全泊<br><br>
+ <b>追加ルール：</b>11月14日・22日を起点に、56日ごとに該当する日勤を休みにします。11月30日は日勤のままです。
+ </div>
+ <p class="small description">例外休み：2026/11/14・11/22・2027/1/9・1/17・3/6・3/14 …</p>
+</section>
+
+<section class="card" id="cycleChangeCard">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
+ <div class="card-heading"><h2 class="sectiontitle">勤務サイクルの変更</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
+ <p class="small description">班替えなどで8日周期の開始位置が変わったら、変更開始日と、その日の周期上の位置を指定してください。変更日より前の勤務・個人予定はそのまま残ります。</p>
+ <div class="row"><input type="date" id="cycleDate"><select id="cycleDay">
+  <option value="0">1日目：日勤</option><option value="1">2日目：夜勤</option><option value="2">3日目：明け</option><option value="3">4日目：日勤</option><option value="4">5日目：夜勤</option><option value="5">6日目：明け</option><option value="6">7日目：休み</option><option value="7">8日目：休み</option>
+ </select></div>
+ <div class="row" style="margin-top:8px"><button class="primary" id="saveCycle">この日から新しい周期にする</button></div>
+ <div id="cycleHistory" class="small" style="margin-top:10px"></div>
+ <p class="small description">56日ごとの特別休日ルールは変更せず、従来の日付を基準に適用します。</p>
+</section>
+
+<section class="card" id="chatCard">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
+  <div class="card-heading"><h2 class="sectiontitle">チャッピーに話しかける</h2><button type="button" id="chatHistoryToggle" class="chat-history-toggle" aria-expanded="false">履歴を見る</button></div>
+ <div class="small description" style="margin-bottom:10px">予定の登録・削除、勤務変更、休みの確認に加え、「11月20日から周期2日目として変更」のように勤務周期も変更できます。</div>
+   <div id="chatLog" class="chat-log-collapsed" style="background:#f7f8fc;border-radius:12px;padding:10px;min-height:58px;max-height:220px;overflow:auto;margin-bottom:10px">
+  <div class="small">こんにちは！「11月20日にデート」みたいに話しかけてね。</div>
+ </div>
+ <div class="row"><input id="chatInput" placeholder="例：11月20日にデート"><button class="primary" id="chatSend">送信</button></div>
+ <p class="small description" style="margin-bottom:0">※現在はアプリ内の簡易コマンド解析です。ChatGPT本体とのAPI接続はまだ行っていません。</p>
+</section>
+
+<section class="card" id="localBackupCard">
+ <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
+ <div class="card-heading"><h2 class="sectiontitle">バックアップ</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
+ <div class="row"><button id="export">データを書き出す</button><button id="importBtn">バックアップを復元</button><input type="file" id="importFile" accept="application/json" class="hidden"></div>
+ <p class="small description">予定・個別勤務変更はこのブラウザ内に自動保存されます。端末変更やブラウザのデータ削除に備えて、定期的にバックアップしてください。</p>
+</section>
+
+<section class="card" id="versionHistory">
+ <h2 class="sectiontitle">更新履歴</h2>
+ <div class="item" style="display:block">
+  <strong>ver 1.8 - 給料日・ボーナス日とカード表示の改善</strong>
+  <small>毎月の給料日と6月・12月のボーナス日を土日調整付きで表示。対象カードの小・中・大を選べるようにし、空白を抑えました。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.7 - ホーム画面のカスタマイズ</strong>
+  <small>チャッピーとカレンダーを上部に配置。カードのサイズ変更やコンパクト表示に対応しました。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.6 - 更新履歴を追加</strong>
+  <small>これまでの改善内容をアプリ内で確認できるようにしました。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.5 - コンパクト表示</strong>
+  <small>各カードの説明文を折りたたみ式に変更。必要なときだけ「説明」ボタンで表示できます。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.4 - カードの並べ替え</strong>
+  <small>編集モードでカードを上下に移動し、決定・キャンセルできるようにしました。表示順は端末に保存されます。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.3 - バックアップと変更履歴</strong>
+  <small>勤務サイクル変更の取り消し、JSONバックアップの書き出し・復元に対応しました。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.2 - Googleクラウド同期</strong>
+  <small>GoogleログインとSupabaseによる勤務・予定データのクラウド保存に対応しました。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.1 - 勤務ルールの拡張</strong>
+  <small>8日周期、56日ごとの特別休日、日付ごとの勤務変更、周期変更に対応しました。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.0 - 初期版</strong>
+  <small>勤務カレンダーとプライベート予定の登録・確認機能を作成しました。</small>
+ </div>
+ <p class="small" style="margin:10px 0 0">※今後のアップデートも、新しいバージョンを一番上に追加していきます。</p>
+</section>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL='https://zzrmwjrzrslhwryqyleh.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_tQKSz8TahOJ8HApvq5U-IQ_rJZzsMxY';
+const supabaseClient=window.supabase?.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const cloudStatusEl=document.getElementById('cloudStatus');
+const loginBtn=document.getElementById('googleLogin');
+const logoutBtn=document.getElementById('googleLogout');
+let cloudUser=null, cloudReady=false, cloudBusy=false, syncTimer=null;
+function setCloudStatus(message){if(cloudStatusEl)cloudStatusEl.textContent=message;}
+function hasLocalData(obj){return !!((obj.events||[]).length||Object.keys(obj.overrides||{}).length||(obj.cycleChanges||[]).length);}
+function cleanPayload(obj){return {events:Array.isArray(obj.events)?obj.events:[],overrides:obj.overrides&&typeof obj.overrides==='object'?obj.overrides:{},cycleChanges:Array.isArray(obj.cycleChanges)?obj.cycleChanges:[]};}
+async function uploadCloud(){
+ if(!supabaseClient||!cloudUser||!cloudReady||cloudBusy)return;
+ cloudBusy=true;setCloudStatus('クラウドに保存中…');
+ try{
+  const payload=cleanPayload(data);
+  const {error}=await supabaseClient.from('user_data').upsert({user_id:cloudUser.id,payload,updated_at:new Date().toISOString()},{onConflict:'user_id'});
+  if(error)throw error;
+  setCloudStatus('✓ Googleログイン済み・クラウドに自動保存されています');
+ }catch(err){console.error('Cloud sync failed',err);setCloudStatus('クラウド保存に失敗しました。端末内のデータは保持されています。通信を確認して再ログインしてください。');}
+ finally{cloudBusy=false;}
+}
+function scheduleCloudSave(){if(!cloudReady||!cloudUser)return;clearTimeout(syncTimer);syncTimer=setTimeout(uploadCloud,700);}
+async function handleAuthSession(session){
+ const user=session?.user||null;
+ if(!user){cloudUser=null;cloudReady=false;loginBtn?.classList.remove('hidden');logoutBtn?.classList.add('hidden');setCloudStatus('未ログイン：この端末内に保存されています。Googleログインするとクラウド同期できます。');return;}
+ if(cloudUser?.id===user.id&&cloudReady)return;
+ cloudUser=user;cloudReady=false;loginBtn?.classList.add('hidden');logoutBtn?.classList.remove('hidden');setCloudStatus('ログイン確認中…');
+ try{
+  const {data:row,error}=await supabaseClient.from('user_data').select('payload,updated_at').eq('user_id',user.id).maybeSingle();
+  if(error)throw error;
+  const local=cleanPayload(data);
+  if(!row){
+   data=local;persist();cloudReady=true;await uploadCloud();
+   setCloudStatus('✓ 初回バックアップ完了！この端末のデータをクラウドに保存しました。');
+  }else{
+   const remote=cleanPayload(row.payload||{});
+   if(hasLocalData(local)&&JSON.stringify(local)!==JSON.stringify(remote)){
+    const useLocal=confirm(`このGoogleアカウントには既存のクラウドデータがあります。\n\n「OK」：このiPhoneのデータでクラウドを更新\n「キャンセル」：クラウドのデータをこのiPhoneに読み込む\n\nどちらかを選んでください。`);
+    if(useLocal){data=local;persist();cloudReady=true;await uploadCloud();}
+    else{data=remote;localStorage.setItem(STORAGE_KEY,JSON.stringify(data));cloudReady=true;render();}
+   }else{
+    data=remote;localStorage.setItem(STORAGE_KEY,JSON.stringify(data));cloudReady=true;render();
+   }
+   setCloudStatus('✓ Googleログイン済み・クラウド同期が有効です');
+  }
+ }catch(err){console.error('Cloud restore failed',err);cloudReady=false;setCloudStatus('ログインはできましたが同期に失敗しました。端末内データはそのまま残っています。');}
+}
+loginBtn?.addEventListener('click',async()=>{
+ if(!supabaseClient){alert('認証ライブラリを読み込めませんでした。通信を確認してね。');return;}
+ loginBtn.disabled=true;setCloudStatus('Googleログイン画面を開いています…');
+ const {error}=await supabaseClient.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+ if(error){console.error(error);setCloudStatus('ログインを開始できませんでした。もう一度試してください。');loginBtn.disabled=false;}
+});
+logoutBtn?.addEventListener('click',async()=>{if(!confirm('ログアウトする？端末内のデータは消えません。'))return;await supabaseClient.auth.signOut();});
+if(supabaseClient){
+ supabaseClient.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>handleAuthSession(session),0);});
+ supabaseClient.auth.getSession().then(({data})=>handleAuthSession(data.session));
+}else{setCloudStatus('認証ライブラリを読み込めませんでした。インターネット接続を確認してください。');}
+
+const STORAGE_KEY='shiftmate_v3_data';
+const BASE=new Date(2026,10,11); // 2026-11-11 is cycle day 1
+const EXCEPTION_SEEDS=[new Date(2026,10,14),new Date(2026,10,22)];
+const names=['日勤','夜勤・半泊','明け','日勤','夜勤・半泊','明け','休み','休み'];
+let data={events:[],overrides:{},cycleChanges:[]};
+try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(saved&&typeof saved==='object')data={...data,...saved,cycleChanges:Array.isArray(saved.cycleChanges)?saved.cycleChanges:[]}}catch(e){}
+let view=new Date(2026,10,1), selected=new Date(2026,10,11);
+// 給料日・ボーナス日は毎年自動計算（土曜は前日、日曜は翌日）
+function observedPaymentDate(year,month,day){
+ const d=new Date(year,month-1,day);
+ if(d.getDay()===6)d.setDate(d.getDate()-1);
+ else if(d.getDay()===0)d.setDate(d.getDate()+1);
+ return d;
+}
+function paymentLabels(d){
+ const year=d.getFullYear(), labels=[];
+ if(key(d)===key(observedPaymentDate(year,d.getMonth()+1,15)))labels.push('給料日');
+ if(d.getMonth()===5&&key(d)===key(observedPaymentDate(year,6,30)))labels.push('ボーナス');
+ if(d.getMonth()===11&&key(d)===key(observedPaymentDate(year,12,10)))labels.push('ボーナス');
+ return labels;
+}
+const key=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const parse=k=>{const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const diffDays=(a,b)=>Math.round((Date.UTC(a.getFullYear(),a.getMonth(),a.getDate())-Date.UTC(b.getFullYear(),b.getMonth(),b.getDate()))/86400000);
+function exceptionOff(d){
+ return EXCEPTION_SEEDS.some(seed=>{const delta=diffDays(d,seed);return delta>=0&&delta%56===0});
+}
+function cyclePosition(d){
+ let anchor=BASE, index=0;
+ for(const change of [...(data.cycleChanges||[])].sort((a,b)=>a.date.localeCompare(b.date))){
+  const effective=parse(change.date);
+  if(effective<=d){anchor=effective;index=Number(change.dayIndex)||0}else break;
+ }
+ return ((index+diffDays(d,anchor))%8+8)%8;
+}
+function baseShift(d){
+ const n=cyclePosition(d);
+ let shift=names[n];
+ if(shift==='夜勤・半泊' && [0,6].includes(d.getDay())) shift='夜勤・全泊';
+ if(exceptionOff(d) && shift==='日勤') shift='休み';
+ return shift;
+}
+function shiftFor(d){return data.overrides[key(d)] ?? baseShift(d)}
+function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data));scheduleCloudSave()}
+function render(){
+ renderCycleHistory();
+ document.getElementById('monthLabel').textContent=`${view.getFullYear()}年 ${view.getMonth()+1}月`;
+ const first=new Date(view.getFullYear(),view.getMonth(),1), start=addDays(first,-first.getDay());
+ const cal=document.getElementById('calendar');cal.innerHTML='';
+ for(let i=0;i<42;i++){
+  const d=addDays(start,i), k=key(d), s=shiftFor(d);
+  const cell=document.createElement('button');cell.className='day'+(d.getMonth()!==view.getMonth()?' dim':'')+(key(d)===key(selected)?' selected':'');
+  const cls=s.startsWith('日勤')?'s-day':s.startsWith('夜勤')?'s-night':s==='明け'?'s-after':'s-off';
+  const ev=data.events.filter(e=>e.date===k);
+  const payments=paymentLabels(d);
+  const paymentHtml=payments.map(label=>'<div class="payment-mark '+(label==='ボーナス'?'bonus':'payday')+'">'+label+'</div>').join('');
+  cell.innerHTML=`<div class="num">${d.getDate()}</div><div class="shift ${cls}">${s.replace('夜勤・','夜勤 ')}</div>${paymentHtml}${ev.slice(0,1).map(e=>`<div class="eventdot">● ${escapeHtml(e.title)}</div>`).join('')}${ev.length>1?`<div class="eventdot">ほか${ev.length-1}件</div>`:''}`;
+  cell.addEventListener('click',()=>{selected=d;render();});cal.appendChild(cell);
+ }
+ renderSelected();
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function renderSelected(){
+ const k=key(selected), base=baseShift(selected), current=shiftFor(selected);
+ const payments=paymentLabels(selected);
+ document.getElementById('selectedTitle').textContent=`${selected.getFullYear()}年${selected.getMonth()+1}月${selected.getDate()}日`;
+ document.getElementById('selectedInfo').innerHTML=`基本勤務：<b>${base}</b>　${data.overrides[k]?'（個別変更あり）':'（通常ルール）'}<br>現在の勤務：<b>${current}</b>${payments.length?'<br><b style="color:#0f766e">'+payments.join('・')+'</b>':''}`;
+ document.getElementById('shiftOverride').value=data.overrides[k]||'';
+ const list=document.getElementById('eventList');const ev=data.events.filter(e=>e.date===k);list.innerHTML=ev.length?'<div class="sectiontitle" style="margin-top:15px">この日の予定</div>':'';
+ ev.forEach(e=>{const div=document.createElement('div');div.className='item';div.innerHTML=`<div><strong>${escapeHtml(e.title)}</strong><small>${e.date}</small></div><div class="actions"><button data-edit="${e.id}">編集</button><button class="danger" data-del="${e.id}">削除</button></div>`;list.appendChild(div)});
+ list.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{data.events=data.events.filter(e=>e.id!==b.dataset.del);persist();render()});
+ list.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{const e=data.events.find(x=>x.id===b.dataset.edit);const v=prompt('予定名を編集',e.title);if(v&&v.trim()){e.title=v.trim();persist();render()}});
+}
+document.getElementById('prev').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()-1,1);render()};
+document.getElementById('next').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()+1,1);render()};
+document.getElementById('today').onclick=()=>{const n=new Date();view=new Date(n.getFullYear(),n.getMonth(),1);selected=n;render()};
+document.getElementById('saveShift').onclick=()=>{const v=document.getElementById('shiftOverride').value;if(v)data.overrides[key(selected)]=v;else delete data.overrides[key(selected)];persist();render()};
+document.getElementById('addEvent').onclick=()=>{const input=document.getElementById('eventTitle'),title=input.value.trim();if(!title){alert('予定名を入力してね');return}data.events.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:key(selected),title});input.value='';persist();render()};
+document.getElementById('export').onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='shiftmate-backup.json';a.click();URL.revokeObjectURL(url)};
+document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
+document.getElementById('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const obj=JSON.parse(await f.text());if(!obj||!Array.isArray(obj.events)||typeof obj.overrides!=='object')throw Error();data={...obj,cycleChanges:Array.isArray(obj.cycleChanges)?obj.cycleChanges:[]};persist();render();alert('バックアップを復元しました')}catch(err){alert('バックアップファイルを読み込めませんでした')}e.target.value=''};
+
+function renderCycleHistory(){
+ const el=document.getElementById('cycleHistory');
+ if(!el)return;
+ const changes=[...(data.cycleChanges||[])].sort((a,b)=>a.date.localeCompare(b.date));
+ el.innerHTML='';
+ if(!changes.length){el.textContent='勤務サイクルの変更はまだ登録されていません。';return;}
+ const heading=document.createElement('b');heading.textContent='登録済みの変更';el.appendChild(heading);
+ changes.forEach(c=>{
+  const row=document.createElement('div');
+  row.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:7px';
+  const label=document.createElement('span');
+  label.textContent=`${c.date} から ${Number(c.dayIndex)+1}日目として計算`;
+  const remove=document.createElement('button');
+  remove.type='button';remove.className='danger';remove.textContent='この変更を取り消す';
+  remove.addEventListener('click',()=>{
+   if(!confirm(`${c.date}からの周期変更を取り消すよ。よろしい？\nほかの日付の変更・予定・個別勤務変更はそのまま残るよ。`))return;
+   data.cycleChanges=(data.cycleChanges||[]).filter(x=>!(x.date===c.date&&Number(x.dayIndex)===Number(c.dayIndex)));
+   persist();render();
+   alert(`${c.date}からの周期変更を取り消したよ。`);
+  });
+  row.append(label,remove);el.appendChild(row);
+ });
+}
+function saveCycleChange(date,dayIndex){
+ data.cycleChanges=(data.cycleChanges||[]).filter(c=>c.date!==date);
+ data.cycleChanges.push({date,dayIndex:Number(dayIndex)});
+ data.cycleChanges.sort((a,b)=>a.date.localeCompare(b.date));
+ persist();
+}
+document.getElementById('saveCycle').onclick=()=>{
+ const date=document.getElementById('cycleDate').value;
+ if(!date){alert('変更開始日を選んでね');return}
+ const idx=Number(document.getElementById('cycleDay').value);
+ if(!confirm(`${date}を${idx+1}日目として、新しい8日周期を開始するよ。よろしい？`))return;
+ saveCycleChange(date,idx);render();alert('勤務サイクルを変更したよ！変更日より前の勤務はそのままだよ。');
+};
+
+function chatMessage(who, message){
+ const log=document.getElementById('chatLog');
+ const div=document.createElement('div');
+ div.style.cssText='margin:7px 0;padding:9px 11px;border-radius:11px;max-width:95%;font-size:13px;line-height:1.5;'+(who==='me'?'margin-left:auto;background:#dbeafe;color:#1e3a8a':'background:white;color:#172033');
+ div.textContent=message;log.appendChild(div);log.scrollTop=log.scrollHeight;
+}
+function dateFromChat(text){
+ const now=new Date();
+ if(text.includes('今日')) return new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ if(text.includes('明日')) return addDays(new Date(now.getFullYear(),now.getMonth(),now.getDate()),1);
+ let m=text.match(/(\d{1,2})月(\d{1,2})日/);
+ if(!m)m=text.match(/(\d{1,2})\/(\d{1,2})/);
+ if(m){
+  let year=now.getFullYear(), month=Number(m[1])-1, day=Number(m[2]);
+  if(month<0||month>11||day<1||day>31)return null;
+  let d=new Date(year,month,day);
+  if(d.getMonth()!==month||d.getDate()!==day)return null;
+  return d;
+ }
+ return null;
+}
+function runChat(){
+ const input=document.getElementById('chatInput'), raw=input.value.trim();
+ if(!raw)return; const log=document.getElementById('chatLog');if(log.classList.contains('chat-log-collapsed'))document.getElementById('chatHistoryToggle').click();
+ input.value='';chatMessage('me',raw);
+ const d=dateFromChat(raw);
+ let reply='ごめんね、その指示はまだうまく読み取れなかったよ。「11月20日にデート」や「11月21日の勤務を休みに変更」のように入力してみてね。';
+ if(raw.includes('次の休み')||raw.includes('次の休暇')){
+  const today=new Date();let found=null;
+  for(let i=0;i<240;i++){const candidate=addDays(new Date(today.getFullYear(),today.getMonth(),today.getDate()),i);if(shiftFor(candidate)==='休み'){found=candidate;break}}
+  if(found){selected=found;view=new Date(found.getFullYear(),found.getMonth(),1);render();reply=`次の休みは${found.getFullYear()}年${found.getMonth()+1}月${found.getDate()}日だよ！カレンダーでその日を選択したよ。`}
+ } else if(raw.includes('削除')||raw.includes('消して')){
+  const target=d||selected, k=key(target), before=data.events.length;
+  data.events=data.events.filter(e=>e.date!==k);
+  if(before!==data.events.length){persist();selected=target;view=new Date(target.getFullYear(),target.getMonth(),1);render();reply=`${target.getMonth()+1}月${target.getDate()}日の予定を削除したよ。`}
+  else reply=`${target.getMonth()+1}月${target.getDate()}日に登録された予定は見つからなかったよ。`;
+ } else if(d && (raw.includes('周期')||raw.includes('サイクル')) && (raw.includes('変更')||raw.includes('開始'))){
+  const m=raw.match(/(\d)日目/);
+  if(m){const idx=Number(m[1])-1;if(idx>=0&&idx<8){saveCycleChange(key(d),idx);selected=d;view=new Date(d.getFullYear(),d.getMonth(),1);render();reply=`${d.getMonth()+1}月${d.getDate()}日を周期${idx+1}日目として、新しい勤務サイクルを登録したよ。56日周期の特別休日ルールはそのままだよ。`}}
+  else reply='周期上の何日目かも指定してね。例：「11月20日から周期2日目として変更」';
+ } else if((raw.includes('勤務')||raw.includes('シフト')) && (raw.includes('変更')||raw.includes('にして')||raw.includes('にする')) && d){
+  let shift=null;
+  if(raw.includes('休み'))shift='休み';
+  else if(raw.includes('日勤'))shift='日勤';
+  else if(raw.includes('明け'))shift='明け';
+  else if(raw.includes('半泊'))shift='夜勤・半泊';
+  else if(raw.includes('全泊'))shift='夜勤・全泊';
+  else if(raw.includes('夜勤'))shift=d.getDay()===0||d.getDay()===6?'夜勤・全泊':'夜勤・半泊';
+  if(shift){data.overrides[key(d)]=shift;persist();selected=d;view=new Date(d.getFullYear(),d.getMonth(),1);render();reply=`${d.getMonth()+1}月${d.getDate()}日の勤務を「${shift}」に変更したよ。基本の8日周期は変わらないよ。`}
+ } else if(d && (raw.includes('に')||raw.includes('予定'))){
+  let title=raw.replace(/^\s*\d{1,2}月\d{1,2}日\s*/,'').replace(/^\s*\d{1,2}\/\d{1,2}\s*/,'').replace(/(に|の)?(予定を)?(登録して|追加して|入れて|入れておいて|にして)$/,'').trim();
+  title=title.replace(/^に/,'').trim();
+  if(!title || title==='予定')title='予定';
+  if(raw.includes('デート'))title='デート';
+  if(raw.includes('通院'))title='通院';
+  if(raw.includes('誕生日'))title='誕生日';
+  data.events.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:key(d),title});
+  persist();selected=d;view=new Date(d.getFullYear(),d.getMonth(),1);render();reply=`${d.getMonth()+1}月${d.getDate()}日に「${title}」を登録したよ！カレンダーに反映したよ。`;
+ }
+ chatMessage('bot',reply);
+}
+document.getElementById('chatSend').onclick=runChat;
+document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')runChat()});
+
+render();
+document.getElementById('chatHistoryToggle').addEventListener('click',()=>{
+ const log=document.getElementById('chatLog');
+ const toggle=document.getElementById('chatHistoryToggle');
+ const open=log.classList.contains('chat-log-collapsed');
+ log.classList.toggle('chat-log-collapsed',!open);
+ toggle.setAttribute('aria-expanded',String(open));
+ toggle.textContent=open?'履歴を閉じる':'履歴を見る';
+});
+document.querySelectorAll('body > section.card:not(#orderToolbar)').forEach(card=>{
+ const toggle=card.querySelector('.explain-toggle');
+ if(!toggle)return;
+ const descriptions=Array.from(card.querySelectorAll('.description'));
+ if(!descriptions.length){toggle.classList.add('hidden');return;}
+ toggle.addEventListener('click',()=>{
+  const open=toggle.getAttribute('aria-expanded')!=='true';
+  toggle.setAttribute('aria-expanded',String(open));
+  toggle.textContent=open?'説明を閉じる':'説明';
+  descriptions.forEach(el=>el.classList.toggle('is-open',open));
+ });
+});
+
+(function setupCardReordering(){
+ const ORDER_KEY='shiftmate_section_order_v1';
+ const toolbar=document.getElementById('orderToolbar');
+ const cards=()=>Array.from(document.querySelectorAll('body > section.card:not(#orderToolbar):not(#versionHistory)'));
+ const start=document.getElementById('startReorder');
+ const confirm=document.getElementById('confirmReorder');
+ const cancel=document.getElementById('cancelReorder');
+ const hint=document.getElementById('orderHint');
+ let originalOrder=[];
+ function applySavedOrder(){
+  const SIZE_KEY='shiftmate_card_size_v1';
+  const sizeCards=()=>['selectedDayCard','cloudCard','workRulesCard','cycleChangeCard','localBackupCard'].map(id=>document.getElementById(id)).filter(Boolean);
+  let savedSizes={};
+  try{savedSizes=JSON.parse(localStorage.getItem(SIZE_KEY)||'{}')}catch(e){}
+  sizeCards().forEach(el=>{
+   const stored=savedSizes[el.id];
+   const initial=['small','medium','large'].includes(stored)?stored:(el.id==='cycleChangeCard'?'medium':'small');
+   el.classList.remove('size-small','size-medium','size-large');
+   el.classList.add('size-'+initial);
+   const controls=el.querySelector('.order-controls');
+   if(!controls)return;
+   const wrap=document.createElement('div');
+   wrap.className='size-controls';
+   ['small','medium','large'].forEach(size=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.textContent=size==='small'?'小':size==='medium'?'中':'大';
+    btn.classList.toggle('active',initial===size);
+    btn.addEventListener('click',()=>{
+     el.classList.remove('size-small','size-medium','size-large');
+     el.classList.add('size-'+size);
+     wrap.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===btn));
+     savedSizes[el.id]=size;
+     localStorage.setItem(SIZE_KEY,JSON.stringify(savedSizes));
+    });
+    wrap.appendChild(btn);
+   });
+   controls.appendChild(wrap);
+  });
+  let saved=[];try{saved=JSON.parse(localStorage.getItem(ORDER_KEY)||'[]')}catch(e){}
+  const current=cards();
+  const byId=new Map(current.map(el=>[el.id,el]));
+  let anchor=toolbar;
+  saved.forEach(id=>{const el=byId.get(id);if(el){anchor.after(el);anchor=el;byId.delete(id)}});
+  byId.forEach(el=>{anchor.after(el);anchor=el});
+  // 初期表示ではチャッピーとカレンダーを必ず上部に並べる
+  const chat=document.getElementById('chatCard');
+  const calendar=document.getElementById('calendarCard');
+  if(chat&&calendar){toolbar.after(chat);chat.after(calendar);}
+ }
+ function cardKey(el){return el.id}
+ function refreshButtons(){
+  const list=cards();
+  list.forEach((el,i)=>{
+   const up=el.querySelector('.move-up'),down=el.querySelector('.move-down');
+   if(up)up.disabled=i===0;
+   if(down)down.disabled=i===list.length-1;
+  });
+ }
+ function setMode(on){
+  document.body.classList.toggle('reorder-mode',on);
+  start.classList.toggle('hidden',on);confirm.classList.toggle('hidden',!on);cancel.classList.toggle('hidden',!on);
+  hint.textContent=on?'↑↓で順番を調整して「決定」を押してね。':'カードの表示順を自分好みに変更できます。';
+  refreshButtons();
+ }
+ cards().forEach(el=>{
+  const up=el.querySelector('.move-up'),down=el.querySelector('.move-down');
+  up.addEventListener('click',()=>{const prev=el.previousElementSibling;if(prev&&prev!==toolbar)prev.before(el);refreshButtons()});
+  down.addEventListener('click',()=>{const next=el.nextElementSibling;if(next&&next!==toolbar)next.after(el);refreshButtons()});
+ });
+ start.addEventListener('click',()=>{originalOrder=cards().slice();setMode(true)});
+ cancel.addEventListener('click',()=>{let anchor=toolbar;originalOrder.forEach(el=>{anchor.after(el);anchor=el});setMode(false)});
+ confirm.addEventListener('click',()=>{localStorage.setItem(ORDER_KEY,JSON.stringify(cards().map(cardKey)));setMode(false)});
+ applySavedOrder();
+})();
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.8').catch(()=>{})); }
+</script>
+</body>
+</html>
