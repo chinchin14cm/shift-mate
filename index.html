@@ -46,8 +46,8 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
 .description p:last-child{margin-bottom:0}
 
 @media(max-width:390px){body{padding:12px 9px}.day{min-height:65px;padding:5px 2px}.shift{font-size:9px}.eventdot{font-size:8px}}
-/* ver 1.8.1：4px基準の行でカード高さを正しく計算し、重なりを防止 */
-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:4px;grid-auto-flow:row dense;column-gap:10px;row-gap:7px;align-items:start}
+/* ver 1.9：カード間隔・カレンダー表示を調整 */
+body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:4px;grid-auto-flow:row dense;column-gap:12px;row-gap:10px;align-items:start}
 header,#orderToolbar,#versionHistory{grid-column:1/-1}
 header{order:-4}#orderToolbar{order:-3}
 .card{min-width:0;margin:0;align-self:start}
@@ -68,17 +68,23 @@ header{order:-4}#orderToolbar{order:-3}
 #chatCard .row{gap:6px}
 #chatInput{padding:10px}
 #chatSend{padding:9px 12px;white-space:nowrap}
-#calendarCard .monthbar{margin-bottom:6px}
-#calendarCard .monthbar strong{font-size:17px}
+#calendarCard .monthbar{margin-bottom:8px}
+#calendarCard .monthbar strong{font-size:18px}
 #calendarCard .week,#calendarCard .days{gap:3px}
-#calendarCard .week div{padding:3px 0}
-#calendarCard .day{min-height:42px;padding:3px 2px;border-radius:8px}
-#calendarCard .num{font-size:11px}
-#calendarCard .shift{font-size:8px;margin-top:2px}
-#calendarCard .eventdot{font-size:7px;margin-top:1px}
+#calendarCard .week div{padding:4px 0}
+#calendarCard .day{min-height:49px;padding:4px 3px;border-radius:9px}
+#calendarCard .num{font-size:12px}
+#calendarCard .shift{font-size:9px;margin-top:3px;display:inline-block;padding:1px 3px;border-radius:4px}
+#calendarCard .eventdot{font-size:8px;margin-top:2px;color:#6d28d9;font-weight:700}
+#calendarCard .s-day{color:#1d4ed8;background:#dbeafe}
+#calendarCard .s-night{color:#9a3412;background:#ffedd5}
+#calendarCard .s-after{color:#475569;background:#e2e8f0}
+#calendarCard .s-off{color:#047857;background:#d1fae5}
 .payment-mark{display:block;font-size:7px;font-weight:850;line-height:1.15;margin-top:1px;white-space:nowrap;overflow:hidden}
 .payment-mark.payday{color:#0f766e}.payment-mark.bonus{color:#b45309}
-@media(max-width:480px){body{padding:9px 8px 26px;column-gap:7px;row-gap:7px}.card{border-radius:15px}#calendarCard .day{min-height:41px}#calendarCard .week,#calendarCard .days{gap:2px}}
+#eventTime{max-width:116px;flex:0 0 116px;padding:10px 6px;font-size:13px}
+@media(max-width:480px){body{padding:9px 8px 26px;column-gap:9px;row-gap:9px}.card{border-radius:15px}#calendarCard .day{min-height:48px}#calendarCard .week,#calendarCard .days{gap:2px}}
+
 @media(max-width:350px){body{grid-template-columns:1fr}.card.size-small{grid-column:1/-1}}
 </style>
 <link rel="manifest" href="./manifest.webmanifest">
@@ -88,7 +94,7 @@ header{order:-4}#orderToolbar{order:-3}
 <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
-<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.8.1</span></header>
+<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.9</span></header>
 <section class="card" id="orderToolbar">
  <button class="primary" id="startReorder">並び順を編集</button>
  <span class="small" id="orderHint">カードの表示順を自分好みに変更できます。</span>
@@ -119,7 +125,7 @@ header{order:-4}#orderToolbar{order:-3}
  <p class="small description">個別変更はその日だけに適用され、8日周期はずれません。</p>
  <div style="height:10px"></div>
  <div class="sectiontitle">プライベートの予定を追加</div>
- <div class="row"><input id="eventTitle" placeholder="例：デート、通院、誕生日"><button class="primary" id="addEvent">予定を追加</button></div>
+ <div class="row"><input id="eventTitle" placeholder="例：デート、通院、誕生日"><input id="eventTime" type="time" aria-label="予定の開始時刻"><button class="primary" id="addEvent">予定を追加</button></div>
  <div id="eventList"></div>
 </section>
 <section class="card" id="workRulesCard">
@@ -148,11 +154,11 @@ header{order:-4}#orderToolbar{order:-3}
 <section class="card" id="chatCard">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
   <div class="card-heading"><h2 class="sectiontitle">チャッピーに話しかける</h2><button type="button" id="chatHistoryToggle" class="chat-history-toggle" aria-expanded="false">履歴を見る</button></div>
- <div class="small description" style="margin-bottom:10px">予定の登録・削除、勤務変更、休みの確認に加え、「11月20日から周期2日目として変更」のように勤務周期も変更できます。</div>
+ <div class="small description" style="margin-bottom:10px">「15日12時からカフェ」のように、日付と開始時刻を入れて予定を登録できます。日付・時刻がない場合は確認してから登録します。勤務変更や休みの確認、勤務周期の変更にも対応しています。</div>
    <div id="chatLog" class="chat-log-collapsed" style="background:#f7f8fc;border-radius:12px;padding:10px;min-height:58px;max-height:220px;overflow:auto;margin-bottom:10px">
-  <div class="small">こんにちは！「11月20日にデート」みたいに話しかけてね。</div>
+  <div class="small">こんにちは！「15日12時からカフェ」のように話しかけてね。</div>
  </div>
- <div class="row"><input id="chatInput" placeholder="例：11月20日にデート"><button class="primary" id="chatSend">送信</button></div>
+ <div class="row"><input id="chatInput" placeholder="例：15日12時からカフェ"><button class="primary" id="chatSend">送信</button></div>
  <p class="small description" style="margin-bottom:0">※現在はアプリ内の簡易コマンド解析です。ChatGPT本体とのAPI接続はまだ行っていません。</p>
 </section>
 
@@ -166,6 +172,10 @@ header{order:-4}#orderToolbar{order:-3}
 <section class="card" id="versionHistory">
  <h2 class="sectiontitle">更新履歴</h2>
   
+ <div class="item" style="display:block">
+  <strong>ver 1.9 - 日時入力とカレンダー表示の改善</strong>
+  <small>チャットから日付・開始時刻を指定して予定を登録できるようにしました。日付や時刻がない場合は登録前に確認します。カレンダーの色・大きさ、カード間の隙間も調整しました。</small>
+ </div>
  <div class="item" style="display:block">
   <strong>ver 1.8.1 - カード配置の修正</strong>
   <small>カードの高さに合わせて配置する設定を修正。サイズ変更の反映とカード間の空白を改善しました。勤務・予定・給料日・ボーナス日の機能はそのままです。</small>
@@ -326,7 +336,7 @@ function render(){
   const cls=s.startsWith('日勤')?'s-day':s.startsWith('夜勤')?'s-night':s==='明け'?'s-after':'s-off';
   const ev=data.events.filter(e=>e.date===k),payments=paymentLabels(d);
   const paymentHtml=payments.map(label=>'<div class="payment-mark '+(label.includes('ボーナス')?'bonus':'payday')+'">'+label+'</div>').join('');
-  cell.innerHTML=`<div class="num">${d.getDate()}</div><div class="shift ${cls}">${s.replace('夜勤・','夜勤 ')}</div>${paymentHtml}${ev.slice(0,1).map(e=>`<div class="eventdot">● ${escapeHtml(e.title)}</div>`).join('')}${ev.length>1?`<div class="eventdot">ほか${ev.length-1}件</div>`:''}`;
+  cell.innerHTML=`<div class="num">${d.getDate()}</div><div class="shift ${cls}">${s.replace('夜勤・','夜勤 ')}</div>${paymentHtml}${ev.slice(0,1).map(e=>`<div class="eventdot">● ${e.time?escapeHtml(e.time)+' ':''}${escapeHtml(e.title)}</div>`).join('')}${ev.length>1?`<div class="eventdot">ほか${ev.length-1}件</div>`:''}`;
   cell.addEventListener('click',()=>{selected=d;render();});cal.appendChild(cell);
  }
  renderSelected();
@@ -338,15 +348,15 @@ function renderSelected(){
  document.getElementById('selectedInfo').innerHTML=`基本勤務：<b>${base}</b>　${data.overrides[k]?'（個別変更あり）':'（通常ルール）'}<br>現在の勤務：<b>${current}</b>${payments.length?'<br><b style="color:#0f766e">'+payments.join('・')+'</b>':''}`;
  document.getElementById('shiftOverride').value=data.overrides[k]||'';
  const list=document.getElementById('eventList');const ev=data.events.filter(e=>e.date===k);list.innerHTML=ev.length?'<div class="sectiontitle" style="margin-top:15px">この日の予定</div>':'';
- ev.forEach(e=>{const div=document.createElement('div');div.className='item';div.innerHTML=`<div><strong>${escapeHtml(e.title)}</strong><small>${e.date}</small></div><div class="actions"><button data-edit="${e.id}">編集</button><button class="danger" data-del="${e.id}">削除</button></div>`;list.appendChild(div)});
+ ev.forEach(e=>{const div=document.createElement('div');div.className='item';div.innerHTML=`<div><strong>${e.time?escapeHtml(e.time)+'　':''}${escapeHtml(e.title)}</strong><small>${e.date}</small></div><div class="actions"><button data-edit="${e.id}">編集</button><button class="danger" data-del="${e.id}">削除</button></div>`;list.appendChild(div)});
  list.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{data.events=data.events.filter(e=>e.id!==b.dataset.del);persist();render()});
- list.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{const e=data.events.find(x=>x.id===b.dataset.edit);const v=prompt('予定名を編集',e.title);if(v&&v.trim()){e.title=v.trim();persist();render()}});
+ list.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{const e=data.events.find(x=>x.id===b.dataset.edit);const v=prompt('予定名を編集',e.title);if(v&&v.trim()){e.title=v.trim();const t=prompt('開始時刻（HH:MM）。時刻を消す場合は空欄',e.time||'');if(t!==null){if(!t.trim())delete e.time;else if(/^([01]\d|2[0-3]):[0-5]\d$/.test(t.trim()))e.time=t.trim();else{alert('時刻は09:30のように入力してね');return}}persist();render()}});
 }
 document.getElementById('prev').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()-1,1);render()};
 document.getElementById('next').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()+1,1);render()};
 document.getElementById('today').onclick=()=>{const n=new Date();view=new Date(n.getFullYear(),n.getMonth(),1);selected=n;render()};
 document.getElementById('saveShift').onclick=()=>{const v=document.getElementById('shiftOverride').value;if(v)data.overrides[key(selected)]=v;else delete data.overrides[key(selected)];persist();render()};
-document.getElementById('addEvent').onclick=()=>{const input=document.getElementById('eventTitle'),title=input.value.trim();if(!title){alert('予定名を入力してね');return}data.events.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:key(selected),title});input.value='';persist();render()};
+document.getElementById('addEvent').onclick=()=>{const input=document.getElementById('eventTitle'),timeInput=document.getElementById('eventTime'),title=input.value.trim(),time=timeInput.value;if(!title){alert('予定名を入力してね');return}const event={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:key(selected),title};if(time)event.time=time;data.events.push(event);input.value='';timeInput.value='';persist();render()};
 document.getElementById('export').onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='shiftmate-backup.json';a.click();URL.revokeObjectURL(url)};
 document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
 document.getElementById('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const obj=JSON.parse(await f.text());if(!obj||!Array.isArray(obj.events)||typeof obj.overrides!=='object')throw Error();data={...obj,cycleChanges:Array.isArray(obj.cycleChanges)?obj.cycleChanges:[]};persist();render();alert('バックアップを復元しました')}catch(err){alert('バックアップファイルを読み込めませんでした')}e.target.value=''};
@@ -397,56 +407,105 @@ function chatMessage(who, message){
 }
 function dateFromChat(text){
  const now=new Date();
- if(text.includes('今日')) return new Date(now.getFullYear(),now.getMonth(),now.getDate());
- if(text.includes('明日')) return addDays(new Date(now.getFullYear(),now.getMonth(),now.getDate()),1);
- let m=text.match(/(\d{1,2})月(\d{1,2})日/);
+ if(text.includes('今日'))return new Date(now.getFullYear(),now.getMonth(),now.getDate());
+ if(text.includes('明日'))return addDays(new Date(now.getFullYear(),now.getMonth(),now.getDate()),1);
+ let m=text.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+ if(m){
+  const year=Number(m[1]),month=Number(m[2])-1,day=Number(m[3]),d=new Date(year,month,day);
+  return month>=0&&month<12&&d.getFullYear()===year&&d.getMonth()===month&&d.getDate()===day?d:null;
+ }
+ m=text.match(/(\d{1,2})月(\d{1,2})日/);
  if(!m)m=text.match(/(\d{1,2})\/(\d{1,2})/);
  if(m){
-  let year=now.getFullYear(), month=Number(m[1])-1, day=Number(m[2]);
-  if(month<0||month>11||day<1||day>31)return null;
-  let d=new Date(year,month,day);
-  if(d.getMonth()!==month||d.getDate()!==day)return null;
-  return d;
+  const year=now.getFullYear(),month=Number(m[1])-1,day=Number(m[2]),d=new Date(year,month,day);
+  return month>=0&&month<12&&d.getMonth()===month&&d.getDate()===day?d:null;
+ }
+ m=text.match(/(^|[^\d])(\d{1,2})日/);
+ if(m){
+  const year=view.getFullYear(),month=view.getMonth(),day=Number(m[2]),d=new Date(year,month,day);
+  return day>=1&&day<=31&&d.getMonth()===month&&d.getDate()===day?d:null;
  }
  return null;
 }
+function timeFromChat(text){
+ let m=text.match(/(午前|午後)?\s*(\d{1,2})時(?:(\d{1,2})分)?/);
+ if(m){
+  let hour=Number(m[2]),minute=Number(m[3]||0);
+  if(hour>23||minute>59)return null;
+  if(m[1]==='午後'&&hour<12)hour+=12;
+  if(m[1]==='午前'&&hour===12)hour=0;
+  return String(hour).padStart(2,'0')+':'+String(minute).padStart(2,'0');
+ }
+ m=text.match(/(^|[^\d])(\d{1,2}):([0-5]\d)(?!\d)/);
+ if(m){
+  const hour=Number(m[2]),minute=Number(m[3]);
+  if(hour<=23)return String(hour).padStart(2,'0')+':'+String(minute).padStart(2,'0');
+ }
+ return null;
+}
+function titleFromChat(text){
+ return text
+  .replace(/\d{4}年\d{1,2}月\d{1,2}日/g,' ')
+  .replace(/\d{1,2}月\d{1,2}日/g,' ')
+  .replace(/\d{1,2}\/\d{1,2}/g,' ')
+  .replace(/(^|[^\d])\d{1,2}日/g,' ')
+  .replace(/今日|明日/g,' ')
+  .replace(/午前|午後/g,' ')
+  .replace(/\d{1,2}時(?:\d{1,2}分)?/g,' ')
+  .replace(/\d{1,2}:[0-5]\d/g,' ')
+  .replace(/から|予定を|予定|登録して|追加して|入れておいて|入れて|登録|追加/g,' ')
+  .replace(/[　\s]+/g,' ').trim();
+}
 function runChat(){
- const input=document.getElementById('chatInput'), raw=input.value.trim();
- if(!raw)return; const log=document.getElementById('chatLog');if(log.classList.contains('chat-log-collapsed'))document.getElementById('chatHistoryToggle').click();
+ const input=document.getElementById('chatInput'),raw=input.value.trim();
+ if(!raw)return;
+ const log=document.getElementById('chatLog');
+ if(log.classList.contains('chat-log-collapsed'))document.getElementById('chatHistoryToggle').click();
  input.value='';chatMessage('me',raw);
- const d=dateFromChat(raw);
- let reply='ごめんね、その指示はまだうまく読み取れなかったよ。「11月20日にデート」や「11月21日の勤務を休みに変更」のように入力してみてね。';
+ const d=dateFromChat(raw),time=timeFromChat(raw);
+ let reply='ごめんね、その指示はまだうまく読み取れなかったよ。「15日12時からカフェ」のように入力してみてね。';
  if(raw.includes('次の休み')||raw.includes('次の休暇')){
   const today=new Date();let found=null;
   for(let i=0;i<240;i++){const candidate=addDays(new Date(today.getFullYear(),today.getMonth(),today.getDate()),i);if(shiftFor(candidate)==='休み'){found=candidate;break}}
   if(found){selected=found;view=new Date(found.getFullYear(),found.getMonth(),1);render();reply=`次の休みは${found.getFullYear()}年${found.getMonth()+1}月${found.getDate()}日だよ！カレンダーでその日を選択したよ。`}
- } else if(raw.includes('削除')||raw.includes('消して')){
-  const target=d||selected, k=key(target), before=data.events.length;
-  data.events=data.events.filter(e=>e.date!==k);
-  if(before!==data.events.length){persist();selected=target;view=new Date(target.getFullYear(),target.getMonth(),1);render();reply=`${target.getMonth()+1}月${target.getDate()}日の予定を削除したよ。`}
-  else reply=`${target.getMonth()+1}月${target.getDate()}日に登録された予定は見つからなかったよ。`;
- } else if(d && (raw.includes('周期')||raw.includes('サイクル')) && (raw.includes('変更')||raw.includes('開始'))){
+ }else if(raw.includes('削除')||raw.includes('消して')){
+  if(!d)reply='削除する日付を入力してね。選択中の日付から勝手に判断しないよ。';
+  else{
+   const k=key(d),before=data.events.length;data.events=data.events.filter(e=>e.date!==k);
+   if(before!==data.events.length){persist();selected=d;view=new Date(d.getFullYear(),d.getMonth(),1);render();reply=`${d.getMonth()+1}月${d.getDate()}日の予定を削除したよ。`}
+   else reply=`${d.getMonth()+1}月${d.getDate()}日に登録された予定は見つからなかったよ。`;
+  }
+ }else if(d&&(raw.includes('周期')||raw.includes('サイクル'))&&(raw.includes('変更')||raw.includes('開始'))){
   const m=raw.match(/(\d)日目/);
   if(m){const idx=Number(m[1])-1;if(idx>=0&&idx<8){saveCycleChange(key(d),idx);selected=d;view=new Date(d.getFullYear(),d.getMonth(),1);render();reply=`${d.getMonth()+1}月${d.getDate()}日を周期${idx+1}日目として、新しい勤務サイクルを登録したよ。56日周期の特別休日ルールはそのままだよ。`}}
   else reply='周期上の何日目かも指定してね。例：「11月20日から周期2日目として変更」';
- } else if((raw.includes('勤務')||raw.includes('シフト')) && (raw.includes('変更')||raw.includes('にして')||raw.includes('にする')) && d){
-  let shift=null;
-  if(raw.includes('休み'))shift='休み';
-  else if(raw.includes('日勤'))shift='日勤';
-  else if(raw.includes('明け'))shift='明け';
-  else if(raw.includes('半泊'))shift='夜勤・半泊';
-  else if(raw.includes('全泊'))shift='夜勤・全泊';
-  else if(raw.includes('夜勤'))shift=d.getDay()===0||d.getDay()===6?'夜勤・全泊':'夜勤・半泊';
-  if(shift){data.overrides[key(d)]=shift;persist();selected=d;view=new Date(d.getFullYear(),d.getMonth(),1);render();reply=`${d.getMonth()+1}月${d.getDate()}日の勤務を「${shift}」に変更したよ。基本の8日周期は変わらないよ。`}
- } else if(d && (raw.includes('に')||raw.includes('予定'))){
-  let title=raw.replace(/^\s*\d{1,2}月\d{1,2}日\s*/,'').replace(/^\s*\d{1,2}\/\d{1,2}\s*/,'').replace(/(に|の)?(予定を)?(登録して|追加して|入れて|入れておいて|にして)$/,'').trim();
-  title=title.replace(/^に/,'').trim();
-  if(!title || title==='予定')title='予定';
-  if(raw.includes('デート'))title='デート';
-  else if(raw.includes('通院'))title='通院';
-  else if(raw.includes('誕生日'))title='誕生日';
-  data.events.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:key(d),title});
-  persist();selected=d;view=new Date(d.getFullYear(),d.getMonth(),1);render();reply=`${d.getMonth()+1}月${d.getDate()}日に「${title}」を登録したよ！カレンダーに反映したよ。`;
+ }else if((raw.includes('勤務')||raw.includes('シフト'))&&(raw.includes('変更')||raw.includes('にして')||raw.includes('にする'))){
+  if(!d)reply='勤務を変更する日付を入力してね。例：「15日の勤務を休みに変更」';
+  else{
+   let shift=null;
+   if(raw.includes('休み'))shift='休み';
+   else if(raw.includes('日勤'))shift='日勤';
+   else if(raw.includes('明け'))shift='明け';
+   else if(raw.includes('半泊'))shift='夜勤・半泊';
+   else if(raw.includes('全泊'))shift='夜勤・全泊';
+   else if(raw.includes('夜勤'))shift=d.getDay()===0||d.getDay()===6?'夜勤・全泊':'夜勤・半泊';
+   if(shift){data.overrides[key(d)]=shift;persist();selected=d;view=new Date(d.getFullYear(),d.getMonth(),1);render();reply=`${d.getMonth()+1}月${d.getDate()}日の勤務を「${shift}」に変更したよ。基本の8日周期は変わらないよ。`}
+  }
+ }else{
+  const title=titleFromChat(raw);
+  const looksLikeEvent=!!title&&(!!time||raw.includes('から')||raw.includes('予定')||/(カフェ|食事|買い物|映画|病院|通院|デート|会議|旅行|美容院|歯医者|ランチ|飲み会|面談|予約)/.test(raw));
+  if(looksLikeEvent&&!d){
+   reply='予定を入れる日付も書いてね！選択中の日付ではなく、入力された日付に登録するよ。例：「15日12時からカフェ」';
+  }else if(looksLikeEvent&&d&&!time){
+   reply=`${d.getMonth()+1}月${d.getDate()}日の予定だね！開始時刻も入力してね。例：「${d.getDate()}日12時から${title}」`;
+  }else if(looksLikeEvent&&d&&time){
+   if(!title)reply='予定の内容も入力してね。例：「15日12時からカフェ」';
+   else{
+    data.events.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:key(d),title,time});
+    persist();selected=d;view=new Date(d.getFullYear(),d.getMonth(),1);render();
+    reply=`${d.getMonth()+1}月${d.getDate()}日 ${time} に「${title}」を登録したよ！終了時刻は設定せず、開始時刻だけ保存したよ。`;
+   }
+  }
  }
  chatMessage('bot',reply);
 }
@@ -555,7 +614,7 @@ document.querySelectorAll('body > section.card:not(#orderToolbar)').forEach(card
 
 // カードの実際の高さに合わせて行数を調整し、サイズ違いのカード間の空白を減らす
 function fitGridRows(){
- const row=4,gap=7;
+ const row=4,gap=10;
  Array.from(document.body.children).filter(el=>el.matches('header,section.card')).forEach(el=>{
   el.style.gridRowEnd='span '+Math.max(1,Math.ceil((el.scrollHeight+gap)/(row+gap)));
  });
@@ -567,7 +626,7 @@ if('ResizeObserver' in window){
 window.addEventListener('resize',fitGridRows);
 requestAnimationFrame(fitGridRows);
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.8-final').catch(()=>{})); }
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.9').catch(()=>{})); }
 </script>
 </body>
 </html>

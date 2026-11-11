@@ -1,4 +1,4 @@
-const CACHE = 'shiftmate-shell-v13-layout-fix';
+const CACHE = 'shiftmate-shell-v14-chat-time-calendar';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
