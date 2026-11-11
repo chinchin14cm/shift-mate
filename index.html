@@ -46,26 +46,21 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
 .description p:last-child{margin-bottom:0}
 
 @media(max-width:390px){body{padding:12px 9px}.day{min-height:65px;padding:5px 2px}.shift{font-size:9px}.eventdot{font-size:8px}}
-/* ver 1.7：ホーム画面風のコンパクト配置 */
-/* ver 1.7：ホーム画面風レイアウト */
-body{
- display:grid;
- grid-template-columns:repeat(2,minmax(0,1fr));
- column-gap:10px;
- align-items:start;
-}
-header,#orderToolbar,#chatCard,#calendarCard,#versionHistory{grid-column:1/-1}
-.card{min-width:0;margin:6px 0}
-.card.size-small{grid-column:span 1}
-.card.size-medium{grid-column:1/-1}
-.card.size-large{grid-column:1/-1;min-height:250px}
-#chatCard,#calendarCard{grid-column:1/-1}
+/* ver 1.8.1：4px基準の行でカード高さを正しく計算し、重なりを防止 */
+body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:4px;grid-auto-flow:row dense;column-gap:10px;row-gap:7px;align-items:start}
+header,#orderToolbar,#versionHistory{grid-column:1/-1}
+header{order:-4}#orderToolbar{order:-3}
+.card{min-width:0;margin:0;align-self:start}
+.card.size-small{grid-column:span 1;padding:10px}
+.card.size-medium{grid-column:1/-1;padding:14px}
+.card.size-large{grid-column:1/-1;padding:18px;min-height:0}
 #orderToolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 #orderToolbar button{padding:8px 10px;font-size:12px}
 #orderToolbar .small{flex:1;min-width:150px}
-.order-controls button{min-width:36px;padding:7px 9px;font-size:13px}
-.size-controls{display:flex;gap:4px;margin-left:6px}
-.size-controls button{min-width:32px!important;padding:6px 7px!important;font-size:11px!important}
+.order-controls{display:none;align-items:center;gap:6px;flex-wrap:wrap}
+.order-controls button{min-width:34px;padding:6px 8px;font-size:12px}
+.size-controls{display:flex;gap:4px;margin-left:auto}
+.size-controls button{min-width:30px!important;padding:6px 7px!important;font-size:11px!important}
 .size-controls button.active{background:#2563eb;color:#fff}
 .chat-history-toggle{padding:6px 10px;font-size:12px;font-weight:650;white-space:nowrap;color:#475569;background:#eef2f7;border-radius:999px}
 #chatLog{max-height:180px;overflow:auto}
@@ -77,20 +72,14 @@ header,#orderToolbar,#chatCard,#calendarCard,#versionHistory{grid-column:1/-1}
 #calendarCard .monthbar strong{font-size:17px}
 #calendarCard .week,#calendarCard .days{gap:3px}
 #calendarCard .week div{padding:3px 0}
-#calendarCard .day{min-height:37px;padding:3px 2px;border-radius:8px}
+#calendarCard .day{min-height:42px;padding:3px 2px;border-radius:8px}
 #calendarCard .num{font-size:11px}
 #calendarCard .shift{font-size:8px;margin-top:2px}
 #calendarCard .eventdot{font-size:7px;margin-top:1px}
-@media(max-width:480px){
- body{padding:9px 8px 26px;column-gap:7px}
- .card{padding:11px;border-radius:15px}
- #calendarCard .day{min-height:36px}
- #calendarCard .week,#calendarCard .days{gap:2px}
-}
-@media(max-width:350px){
- body{grid-template-columns:1fr}
- .card.size-small{grid-column:1/-1}
-}
+.payment-mark{display:block;font-size:7px;font-weight:850;line-height:1.15;margin-top:1px;white-space:nowrap;overflow:hidden}
+.payment-mark.payday{color:#0f766e}.payment-mark.bonus{color:#b45309}
+@media(max-width:480px){body{padding:9px 8px 26px;column-gap:7px;row-gap:7px}.card{border-radius:15px}#calendarCard .day{min-height:41px}#calendarCard .week,#calendarCard .days{gap:2px}}
+@media(max-width:350px){body{grid-template-columns:1fr}.card.size-small{grid-column:1/-1}}
 </style>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -99,7 +88,7 @@ header,#orderToolbar,#chatCard,#calendarCard,#versionHistory{grid-column:1/-1}
 <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
-<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v6</span></header>
+<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.8.1</span></header>
 <section class="card" id="orderToolbar">
  <button class="primary" id="startReorder">並び順を編集</button>
  <span class="small" id="orderHint">カードの表示順を自分好みに変更できます。</span>
@@ -177,6 +166,14 @@ header,#orderToolbar,#chatCard,#calendarCard,#versionHistory{grid-column:1/-1}
 <section class="card" id="versionHistory">
  <h2 class="sectiontitle">更新履歴</h2>
   
+ <div class="item" style="display:block">
+  <strong>ver 1.8.1 - カード配置の修正</strong>
+  <small>カードの高さに合わせて配置する設定を修正。サイズ変更の反映とカード間の空白を改善しました。勤務・予定・給料日・ボーナス日の機能はそのままです。</small>
+ </div>
+ <div class="item" style="display:block">
+  <strong>ver 1.8 - 給料日・ボーナス日とカード表示の改善</strong>
+  <small>毎月15日の給料日、6月30日の夏ボーナス、12月10日の冬ボーナスを土日調整付きで表示。すべてのカードで小・中・大を選べます。</small>
+ </div>
  <div class="item" style="display:block">
   <strong>ver 1.7 - ホーム画面のカスタマイズ</strong>
   <small>チャッピーとカレンダーを上部に配置。カードのサイズ変更やコンパクト表示に対応しました。</small>
@@ -304,6 +301,20 @@ function baseShift(d){
 }
 function shiftFor(d){return data.overrides[key(d)] ?? baseShift(d)}
 function persist(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data));scheduleCloudSave()}
+// 給料日・ボーナス日は毎年自動計算（土曜は前日、日曜は翌日）
+function observedPaymentDate(year,month,day){
+ const d=new Date(year,month-1,day);
+ if(d.getDay()===6)d.setDate(d.getDate()-1);
+ else if(d.getDay()===0)d.setDate(d.getDate()+1);
+ return d;
+}
+function paymentLabels(d){
+ const year=d.getFullYear(),labels=[];
+ if(key(d)===key(observedPaymentDate(year,d.getMonth()+1,15)))labels.push('給料日');
+ if(d.getMonth()===5&&key(d)===key(observedPaymentDate(year,6,30)))labels.push('夏ボーナス');
+ if(d.getMonth()===11&&key(d)===key(observedPaymentDate(year,12,10)))labels.push('冬ボーナス');
+ return labels;
+}
 function render(){
  renderCycleHistory();
  document.getElementById('monthLabel').textContent=`${view.getFullYear()}年 ${view.getMonth()+1}月`;
@@ -313,17 +324,18 @@ function render(){
   const d=addDays(start,i), k=key(d), s=shiftFor(d);
   const cell=document.createElement('button');cell.className='day'+(d.getMonth()!==view.getMonth()?' dim':'')+(key(d)===key(selected)?' selected':'');
   const cls=s.startsWith('日勤')?'s-day':s.startsWith('夜勤')?'s-night':s==='明け'?'s-after':'s-off';
-  const ev=data.events.filter(e=>e.date===k);
-  cell.innerHTML=`<div class="num">${d.getDate()}</div><div class="shift ${cls}">${s.replace('夜勤・','夜勤 ')}</div>${ev.slice(0,1).map(e=>`<div class="eventdot">● ${escapeHtml(e.title)}</div>`).join('')}${ev.length>1?`<div class="eventdot">ほか${ev.length-1}件</div>`:''}`;
+  const ev=data.events.filter(e=>e.date===k),payments=paymentLabels(d);
+  const paymentHtml=payments.map(label=>'<div class="payment-mark '+(label.includes('ボーナス')?'bonus':'payday')+'">'+label+'</div>').join('');
+  cell.innerHTML=`<div class="num">${d.getDate()}</div><div class="shift ${cls}">${s.replace('夜勤・','夜勤 ')}</div>${paymentHtml}${ev.slice(0,1).map(e=>`<div class="eventdot">● ${escapeHtml(e.title)}</div>`).join('')}${ev.length>1?`<div class="eventdot">ほか${ev.length-1}件</div>`:''}`;
   cell.addEventListener('click',()=>{selected=d;render();});cal.appendChild(cell);
  }
  renderSelected();
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function renderSelected(){
- const k=key(selected), base=baseShift(selected), current=shiftFor(selected);
+ const k=key(selected), base=baseShift(selected), current=shiftFor(selected),payments=paymentLabels(selected);
  document.getElementById('selectedTitle').textContent=`${selected.getFullYear()}年${selected.getMonth()+1}月${selected.getDate()}日`;
- document.getElementById('selectedInfo').innerHTML=`基本勤務：<b>${base}</b>　${data.overrides[k]?'（個別変更あり）':'（通常ルール）'}<br>現在の勤務：<b>${current}</b>`;
+ document.getElementById('selectedInfo').innerHTML=`基本勤務：<b>${base}</b>　${data.overrides[k]?'（個別変更あり）':'（通常ルール）'}<br>現在の勤務：<b>${current}</b>${payments.length?'<br><b style="color:#0f766e">'+payments.join('・')+'</b>':''}`;
  document.getElementById('shiftOverride').value=data.overrides[k]||'';
  const list=document.getElementById('eventList');const ev=data.events.filter(e=>e.date===k);list.innerHTML=ev.length?'<div class="sectiontitle" style="margin-top:15px">この日の予定</div>':'';
  ev.forEach(e=>{const div=document.createElement('div');div.className='item';div.innerHTML=`<div><strong>${escapeHtml(e.title)}</strong><small>${e.date}</small></div><div class="actions"><button data-edit="${e.id}">編集</button><button class="danger" data-del="${e.id}">削除</button></div>`;list.appendChild(div)});
@@ -476,11 +488,12 @@ document.querySelectorAll('body > section.card:not(#orderToolbar)').forEach(card
  const hint=document.getElementById('orderHint');
  let originalOrder=[];
  function applySavedOrder(){ const SIZE_KEY='shiftmate_card_size_v1';
- const sizeCards=()=>['cloudCard','workRulesCard','cycleChangeCard','localBackupCard'].map(id=>document.getElementById(id)).filter(Boolean);
+ const sizeCards=()=>cards().filter(el=>el.querySelector('.order-controls'));
  let savedSizes={};
  try{savedSizes=JSON.parse(localStorage.getItem(SIZE_KEY)||'{}')}catch(e){}
  sizeCards().forEach(el=>{
-  const initial=savedSizes[el.id]|| (el.id==='cycleChangeCard'?'medium':'small');
+  const defaults={chatCard:'large',calendarCard:'large',selectedDayCard:'medium',cycleChangeCard:'medium'};
+  const initial=['small','medium','large'].includes(savedSizes[el.id])?savedSizes[el.id]:(defaults[el.id]||'small');
   el.classList.add('size-'+initial);
   const controls=el.querySelector('.order-controls');
   if(!controls)return;
@@ -497,6 +510,7 @@ document.querySelectorAll('body > section.card:not(#orderToolbar)').forEach(card
     wrap.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===btn));
     savedSizes[el.id]=size;
     localStorage.setItem(SIZE_KEY,JSON.stringify(savedSizes));
+    requestAnimationFrame(fitGridRows);
    });
    wrap.appendChild(btn);
   });
@@ -508,6 +522,10 @@ document.querySelectorAll('body > section.card:not(#orderToolbar)').forEach(card
   let anchor=toolbar;
   saved.forEach(id=>{const el=byId.get(id);if(el){anchor.after(el);anchor=el;byId.delete(id)}});
   byId.forEach(el=>{anchor.after(el);anchor=el});
+  if(!saved.length){
+   const chat=document.getElementById('chatCard'),calendar=document.getElementById('calendarCard');
+   if(chat&&calendar){toolbar.after(chat);chat.after(calendar);}
+  }
  }
  function cardKey(el){return el.id}
  function refreshButtons(){
@@ -535,7 +553,21 @@ document.querySelectorAll('body > section.card:not(#orderToolbar)').forEach(card
  applySavedOrder();
 })();
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{})); }
+// カードの実際の高さに合わせて行数を調整し、サイズ違いのカード間の空白を減らす
+function fitGridRows(){
+ const row=4,gap=7;
+ Array.from(document.body.children).filter(el=>el.matches('header,section.card')).forEach(el=>{
+  el.style.gridRowEnd='span '+Math.max(1,Math.ceil((el.scrollHeight+gap)/(row+gap)));
+ });
+}
+if('ResizeObserver' in window){
+ const gridObserver=new ResizeObserver(()=>requestAnimationFrame(fitGridRows));
+ Array.from(document.body.children).filter(el=>el.matches('header,section.card')).forEach(el=>gridObserver.observe(el));
+}
+window.addEventListener('resize',fitGridRows);
+requestAnimationFrame(fitGridRows);
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.8-final').catch(()=>{})); }
 </script>
 </body>
 </html>
