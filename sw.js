@@ -1,4 +1,4 @@
-const CACHE = 'shiftmate-shell-v10-stable-card-order';
+const CACHE = 'shiftmate-shell-v11-stable-card-order';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));
