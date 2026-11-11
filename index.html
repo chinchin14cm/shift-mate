@@ -46,7 +46,30 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
 .description p:last-child{margin-bottom:0}
 
 @media(max-width:390px){body{padding:12px 9px}.day{min-height:65px;padding:5px 2px}.shift{font-size:9px}.eventdot{font-size:8px}}
-</style>
+/* ver 1.7：ホーム画面風のコンパクト配置 */
+body{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  column-gap:10px;
+  align-items:start;
+}
+header,#orderToolbar,#chatCard,#calendarCard,
+#selectedDayCard,#versionHistory{
+  grid-column:1 / -1;
+}
+header{grid-column:1/-1;order:-4}
+ #orderToolbar{order:-3}
+#chatCard{order:-2}
+#calendarCard{order:-1}
+.card{min-width:0;margin:6px 0}
+#chatCard,#calendarCard,#selectedDayCard{width:100%}
+#orderToolbar button{padding:8px 10px;font-size:12px}
+.order-controls button{min-width:38px;padding:7px 9px}
+@media(max-width:390px){
+  body{padding:10px 8px 28px;column-gap:7px}
+  .card{padding:11px;border-radius:15px}
+  .day{min-height:65px}
+}</style>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
