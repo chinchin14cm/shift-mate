@@ -47,29 +47,51 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
 
 @media(max-width:390px){body{padding:12px 9px}.day{min-height:65px;padding:5px 2px}.shift{font-size:9px}.eventdot{font-size:8px}}
 /* ver 1.7：ホーム画面風のコンパクト配置 */
+/* ver 1.7：ホーム画面風レイアウト */
 body{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  column-gap:10px;
-  align-items:start;
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ column-gap:10px;
+ align-items:start;
 }
-header,#orderToolbar,#chatCard,#calendarCard,
-#selectedDayCard,#versionHistory{
-  grid-column:1 / -1;
-}
-header{grid-column:1/-1;order:-4}
- #orderToolbar{order:-3}
-#chatCard{order:-2}
-#calendarCard{order:-1}
+header,#orderToolbar,#chatCard,#calendarCard,#versionHistory{grid-column:1/-1}
 .card{min-width:0;margin:6px 0}
-#chatCard,#calendarCard,#selectedDayCard{width:100%}
+.card.size-small{grid-column:span 1}
+.card.size-medium{grid-column:1/-1}
+.card.size-large{grid-column:1/-1;min-height:250px}
+#chatCard,#calendarCard{grid-column:1/-1}
+#orderToolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 #orderToolbar button{padding:8px 10px;font-size:12px}
-.order-controls button{min-width:38px;padding:7px 9px}
-@media(max-width:390px){
-  body{padding:10px 8px 28px;column-gap:7px}
-  .card{padding:11px;border-radius:15px}
-  .day{min-height:65px}
-}</style>
+#orderToolbar .small{flex:1;min-width:150px}
+.order-controls button{min-width:36px;padding:7px 9px;font-size:13px}
+.size-controls{display:flex;gap:4px;margin-left:6px}
+.size-controls button{min-width:32px!important;padding:6px 7px!important;font-size:11px!important}
+.size-controls button.active{background:#2563eb;color:#fff}
+.chat-history-toggle{padding:6px 10px;font-size:12px;font-weight:650;white-space:nowrap;color:#475569;background:#eef2f7;border-radius:999px}
+#chatLog{max-height:180px;overflow:auto}
+#chatLog.chat-log-collapsed{display:none}
+#chatCard .row{gap:6px}
+#chatInput{padding:10px}
+#chatSend{padding:9px 12px;white-space:nowrap}
+#calendarCard .monthbar{margin-bottom:6px}
+#calendarCard .monthbar strong{font-size:17px}
+#calendarCard .week,#calendarCard .days{gap:3px}
+#calendarCard .week div{padding:3px 0}
+#calendarCard .day{min-height:37px;padding:3px 2px;border-radius:8px}
+#calendarCard .num{font-size:11px}
+#calendarCard .shift{font-size:8px;margin-top:2px}
+#calendarCard .eventdot{font-size:7px;margin-top:1px}
+@media(max-width:480px){
+ body{padding:9px 8px 26px;column-gap:7px}
+ .card{padding:11px;border-radius:15px}
+ #calendarCard .day{min-height:36px}
+ #calendarCard .week,#calendarCard .days{gap:2px}
+}
+@media(max-width:350px){
+ body{grid-template-columns:1fr}
+ .card.size-small{grid-column:1/-1}
+}
+</style>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -136,9 +158,9 @@ header{grid-column:1/-1;order:-4}
 
 <section class="card" id="chatCard">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
- <div class="card-heading"><h2 class="sectiontitle">チャッピーに話しかける</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
+  <div class="card-heading"><h2 class="sectiontitle">チャッピーに話しかける</h2><button type="button" id="chatHistoryToggle" class="chat-history-toggle" aria-expanded="false">履歴を見る</button></div>
  <div class="small description" style="margin-bottom:10px">予定の登録・削除、勤務変更、休みの確認に加え、「11月20日から周期2日目として変更」のように勤務周期も変更できます。</div>
- <div id="chatLog" style="background:#f7f8fc;border-radius:12px;padding:10px;min-height:58px;max-height:220px;overflow:auto;margin-bottom:10px">
+   <div id="chatLog" class="chat-log-collapsed" style="background:#f7f8fc;border-radius:12px;padding:10px;min-height:58px;max-height:220px;overflow:auto;margin-bottom:10px">
   <div class="small">こんにちは！「11月20日にデート」みたいに話しかけてね。</div>
  </div>
  <div class="row"><input id="chatInput" placeholder="例：11月20日にデート"><button class="primary" id="chatSend">送信</button></div>
@@ -154,6 +176,12 @@ header{grid-column:1/-1;order:-4}
 
 <section class="card" id="versionHistory">
  <h2 class="sectiontitle">更新履歴</h2>
+  
+ <div class="item" style="display:block">
+  <strong>ver 1.7 - ホーム画面のカスタマイズ</strong>
+  <small>チャッピーとカレンダーを上部に配置。カードのサイズ変更やコンパクト表示に対応しました。</small>
+ </div>
+
  <div class="item" style="display:block">
   <strong>ver 1.6 - 更新履歴を追加</strong>
   <small>これまでの改善内容をアプリ内で確認できるようにしました。</small>
@@ -372,7 +400,7 @@ function dateFromChat(text){
 }
 function runChat(){
  const input=document.getElementById('chatInput'), raw=input.value.trim();
- if(!raw)return;
+ if(!raw)return; const log=document.getElementById('chatLog');if(log.classList.contains('chat-log-collapsed'))document.getElementById('chatHistoryToggle').click();
  input.value='';chatMessage('me',raw);
  const d=dateFromChat(raw);
  let reply='ごめんね、その指示はまだうまく読み取れなかったよ。「11月20日にデート」や「11月21日の勤務を休みに変更」のように入力してみてね。';
@@ -414,7 +442,15 @@ document.getElementById('chatSend').onclick=runChat;
 document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')runChat()});
 
 render();
-
+// チャッピーの会話履歴を開閉する
+document.getElementById('chatHistoryToggle').addEventListener('click',()=>{
+ const log=document.getElementById('chatLog');
+ const toggle=document.getElementById('chatHistoryToggle');
+ const open=log.classList.contains('chat-log-collapsed');
+ log.classList.toggle('chat-log-collapsed',!open);
+ toggle.setAttribute('aria-expanded',String(open));
+ toggle.textContent=open?'履歴を閉じる':'履歴を見る';
+});
 // 説明文は初期状態で折りたたみ、各カードごとに開閉します。
 document.querySelectorAll('body > section.card:not(#orderToolbar)').forEach(card=>{
  const toggle=card.querySelector('.explain-toggle');
@@ -439,7 +475,33 @@ document.querySelectorAll('body > section.card:not(#orderToolbar)').forEach(card
  const cancel=document.getElementById('cancelReorder');
  const hint=document.getElementById('orderHint');
  let originalOrder=[];
- function applySavedOrder(){
+ function applySavedOrder(){ const SIZE_KEY='shiftmate_card_size_v1';
+ const sizeCards=()=>['cloudCard','workRulesCard','cycleChangeCard','localBackupCard'].map(id=>document.getElementById(id)).filter(Boolean);
+ let savedSizes={};
+ try{savedSizes=JSON.parse(localStorage.getItem(SIZE_KEY)||'{}')}catch(e){}
+ sizeCards().forEach(el=>{
+  const initial=savedSizes[el.id]|| (el.id==='cycleChangeCard'?'medium':'small');
+  el.classList.add('size-'+initial);
+  const controls=el.querySelector('.order-controls');
+  if(!controls)return;
+  const wrap=document.createElement('div');
+  wrap.className='size-controls';
+  ['small','medium','large'].forEach(size=>{
+   const btn=document.createElement('button');
+   btn.type='button';
+   btn.textContent=size==='small'?'小':size==='medium'?'中':'大';
+   btn.classList.toggle('active',initial===size);
+   btn.addEventListener('click',()=>{
+    el.classList.remove('size-small','size-medium','size-large');
+    el.classList.add('size-'+size);
+    wrap.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===btn));
+    savedSizes[el.id]=size;
+    localStorage.setItem(SIZE_KEY,JSON.stringify(savedSizes));
+   });
+   wrap.appendChild(btn);
+  });
+  controls.appendChild(wrap);
+ });
   let saved=[];try{saved=JSON.parse(localStorage.getItem(ORDER_KEY)||'[]')}catch(e){}
   const current=cards();
   const byId=new Map(current.map(el=>[el.id,el]));
