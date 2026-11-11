@@ -67,7 +67,7 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
  <div class="row" style="flex-wrap:wrap"><button class="primary" id="googleLogin">Googleでログイン</button><button id="googleLogout" class="hidden">ログアウト</button></div>
  <p class="small" id="cloudStatus" aria-live="polite">未ログイン：この端末内に保存されています。Googleログインするとクラウド同期できます。</p>
 </section>
-<section class="card">
+<section class="card" id="calendarCard">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <div class="card-heading"><span class="sectiontitle">カレンダー</span><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
  <div class="monthbar"><button id="prev">‹</button><strong id="monthLabel"></strong><div class="nav"><button id="today">今日</button><button id="next">›</button></div></div>
@@ -75,7 +75,7 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
  <div class="days" id="calendar"></div>
  <p class="small description">日付をタップすると、その日の勤務・予定を確認／編集できます。</p>
 </section>
-<section class="card">
+<section class="card" id="selectedDayCard">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <div class="card-heading"><h2 class="sectiontitle" id="selectedTitle">日付を選択</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
  <div id="selectedInfo" class="small"></div>
@@ -88,7 +88,7 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
  <div class="row"><input id="eventTitle" placeholder="例：デート、通院、誕生日"><button class="primary" id="addEvent">予定を追加</button></div>
  <div id="eventList"></div>
 </section>
-<section class="card">
+<section class="card" id="workRulesCard">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <div class="card-heading"><h2 class="sectiontitle">勤務ルール</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
  <div class="notice description">
@@ -99,7 +99,7 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
  <p class="small description">例外休み：2026/11/14・11/22・2027/1/9・1/17・3/6・3/14 …</p>
 </section>
 
-<section class="card">
+<section class="card" id="cycleChangeCard">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <div class="card-heading"><h2 class="sectiontitle">勤務サイクルの変更</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
  <p class="small description">班替えなどで8日周期の開始位置が変わったら、変更開始日と、その日の周期上の位置を指定してください。変更日より前の勤務・個人予定はそのまま残ります。</p>
@@ -111,7 +111,7 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
  <p class="small description">56日ごとの特別休日ルールは変更せず、従来の日付を基準に適用します。</p>
 </section>
 
-<section class="card">
+<section class="card" id="chatCard">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <div class="card-heading"><h2 class="sectiontitle">チャッピーに話しかける</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
  <div class="small description" style="margin-bottom:10px">予定の登録・削除、勤務変更、休みの確認に加え、「11月20日から周期2日目として変更」のように勤務周期も変更できます。</div>
@@ -122,7 +122,7 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
  <p class="small description" style="margin-bottom:0">※現在はアプリ内の簡易コマンド解析です。ChatGPT本体とのAPI接続はまだ行っていません。</p>
 </section>
 
-<section class="card">
+<section class="card" id="localBackupCard">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
  <div class="card-heading"><h2 class="sectiontitle">バックアップ</h2><button type="button" class="explain-toggle" aria-expanded="false">説明</button></div>
  <div class="row"><button id="export">データを書き出す</button><button id="importBtn">バックアップを復元</button><input type="file" id="importFile" accept="application/json" class="hidden"></div>
@@ -419,12 +419,12 @@ document.querySelectorAll('body > section.card:not(#orderToolbar)').forEach(card
  function applySavedOrder(){
   let saved=[];try{saved=JSON.parse(localStorage.getItem(ORDER_KEY)||'[]')}catch(e){}
   const current=cards();
-  const byId=new Map(current.map((el,i)=>[el.id||'card-'+i,el]));
+  const byId=new Map(current.map(el=>[el.id,el]));
   let anchor=toolbar;
   saved.forEach(id=>{const el=byId.get(id);if(el){anchor.after(el);anchor=el;byId.delete(id)}});
   byId.forEach(el=>{anchor.after(el);anchor=el});
  }
- function cardKey(el){return el.id||'card-'+cards().indexOf(el)}
+ function cardKey(el){return el.id}
  function refreshButtons(){
   const list=cards();
   list.forEach((el,i)=>{
