@@ -320,7 +320,7 @@ async function enablePushNotifications(){
  try{
   const keyResponse=await fetch(PUSH_ENDPOINT,{method:'GET',headers:{'Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_ANON_KEY}});
   const keyData=await keyResponse.json();
-  if(!keyResponse.ok||!keyData.publicKey)throw new Error(keyData.error||'公開鍵を取得できませんでした');
+  if(!keyResponse.ok||!keyData.publicKey)throw new Error('HTTP '+keyResponse.status+' / '+(keyData.error||JSON.stringify(keyData)));
   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
   if(permission!=='granted'){setPushStatus('通知が許可されませんでした。iPhoneの設定からShiftMateの通知を許可してね。');return;}
   const registration=await navigator.serviceWorker.register('./sw.js?v=1.10');
