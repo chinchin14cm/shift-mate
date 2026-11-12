@@ -48,11 +48,10 @@ body.reorder-mode .card{outline:2px dashed #93c5fd;outline-offset:1px}
 @media(max-width:390px){body{padding:12px 9px}.day{min-height:65px;padding:5px 2px}.shift{font-size:9px}.eventdot{font-size:8px}}
 /* ver 1.9：カード間隔・カレンダー表示を調整 */
 body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1px;grid-auto-flow:row dense;column-gap:10px;row-gap:10px;align-items:start}
-header,#orderToolbar,#versionHistory{grid-column:1/-1}
+header,#orderToolbar,#calendarCard,#chatCard{grid-column:1/-1}
 header{order:-4}#orderToolbar{order:-3}
 .card{min-width:0;margin:0;align-self:start}
 .card.size-small{grid-column:span 1;padding:10px}
-.card.size-medium{grid-column:1/-1;padding:14px}
 .card.size-large{grid-column:1/-1;padding:18px;min-height:0}
 #orderToolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 #orderToolbar button{padding:8px 10px;font-size:12px}
@@ -60,8 +59,13 @@ header{order:-4}#orderToolbar{order:-3}
 .order-controls{display:none;align-items:center;gap:6px;flex-wrap:wrap}
 .order-controls button{min-width:34px;padding:6px 8px;font-size:12px}
 .size-controls{display:flex;gap:4px;margin-left:auto}
-.size-controls button{min-width:30px!important;padding:6px 7px!important;font-size:11px!important}
+.size-controls button{min-width:36px!important;padding:7px 10px!important;font-size:12px!important}
 .size-controls button.active{background:#2563eb;color:#fff}
+.drag-handle{touch-action:none;cursor:grab;user-select:none;font-size:18px!important;line-height:1}
+.drag-handle:active{cursor:grabbing}
+body.reorder-mode .card:not(#orderToolbar){outline:2px dashed #93c5fd;outline-offset:1px}
+body.reorder-mode .card.is-dragging{opacity:.55;outline:2px solid #2563eb;z-index:5}
+body.reorder-mode{user-select:none}
 .chat-history-toggle{padding:6px 10px;font-size:12px;font-weight:650;white-space:nowrap;color:#475569;background:#eef2f7;border-radius:999px}
 #chatLog{max-height:180px;overflow:auto}
 #chatLog.chat-log-collapsed{display:none}
@@ -94,7 +98,7 @@ header{order:-4}#orderToolbar{order:-3}
 <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
-<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.10</span></header>
+<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.12</span></header>
 <section class="card" id="orderToolbar">
  <button class="primary" id="startReorder">並び順を編集</button>
  <span class="small" id="orderHint">カードの表示順を自分好みに変更できます。</span>
@@ -175,6 +179,10 @@ header{order:-4}#orderToolbar{order:-3}
 
 <section class="card" id="versionHistory">
  <h2 class="sectiontitle">更新履歴</h2>
+ <div class="item" style="display:block">
+  <strong>ver 1.12 - ドラッグ移動と大・小サイズに対応</strong>
+  <small>カレンダーとチャッピー欄を固定し、それ以外のカードをドラッグで並べ替えできます。カードサイズは大・小の2種類になり、決定・キャンセルにも対応しました。</small>
+ </div>
   
  <div class="item" style="display:block">
   <strong>ver 1.10 - プッシュ通知の登録に対応</strong>
@@ -323,7 +331,7 @@ async function enablePushNotifications(){
   if(!keyResponse.ok||!keyData.publicKey)throw new Error('HTTP '+keyResponse.status+' / '+(keyData.error||JSON.stringify(keyData)));
   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
   if(permission!=='granted'){setPushStatus('通知が許可されませんでした。iPhoneの設定からShiftMateの通知を許可してね。');return;}
-  const registration=await navigator.serviceWorker.register('./sw.js?v=1.11');
+  const registration=await navigator.serviceWorker.register('./sw.js?v=1.12');
   await navigator.serviceWorker.ready;
   const applicationServerKey=base64UrlToUint8Array(keyData.publicKey);
   let subscription=await registration.pushManager.getSubscription();
@@ -607,80 +615,160 @@ document.querySelectorAll('body > section.card:not(#orderToolbar)').forEach(card
  });
 });
 
-// カードの並べ替え（端末内に保存。勤務データ・クラウド同期には影響しません）
-(function setupCardReordering(){
+// カードの配置編集（カレンダー・チャッピー欄は固定。勤務データやクラウド同期には影響しません）
+(function setupCardLayoutEditor(){
  const ORDER_KEY='shiftmate_section_order_v1';
+ const SIZE_KEY='shiftmate_card_size_v1';
  const toolbar=document.getElementById('orderToolbar');
- const cards=()=>Array.from(document.querySelectorAll('body > section.card:not(#orderToolbar):not(#versionHistory)'));
  const start=document.getElementById('startReorder');
  const confirm=document.getElementById('confirmReorder');
  const cancel=document.getElementById('cancelReorder');
  const hint=document.getElementById('orderHint');
+ const pinnedIds=['calendarCard','chatCard'];
+ const cards=()=>Array.from(document.querySelectorAll('body > section.card:not(#orderToolbar):not(#calendarCard):not(#chatCard)'));
  let originalOrder=[];
- function applySavedOrder(){ const SIZE_KEY='shiftmate_card_size_v1';
- const sizeCards=()=>cards().filter(el=>el.querySelector('.order-controls'));
- let savedSizes={};
- try{savedSizes=JSON.parse(localStorage.getItem(SIZE_KEY)||'{}')}catch(e){}
- sizeCards().forEach(el=>{
-  const defaults={chatCard:'large',calendarCard:'large',selectedDayCard:'medium',cycleChangeCard:'medium'};
-  const initial=['small','medium','large'].includes(savedSizes[el.id])?savedSizes[el.id]:(defaults[el.id]||'small');
-  el.classList.add('size-'+initial);
-  const controls=el.querySelector('.order-controls');
-  if(!controls)return;
-  const wrap=document.createElement('div');
-  wrap.className='size-controls';
-  ['small','medium','large'].forEach(size=>{
-   const btn=document.createElement('button');
-   btn.type='button';
-   btn.textContent=size==='small'?'小':size==='medium'?'中':'大';
-   btn.classList.toggle('active',initial===size);
-   btn.addEventListener('click',()=>{
-    el.classList.remove('size-small','size-medium','size-large');
-    el.classList.add('size-'+size);
-    wrap.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===btn));
-    savedSizes[el.id]=size;
-    localStorage.setItem(SIZE_KEY,JSON.stringify(savedSizes));
+ let originalSizes={};
+ let dragged=null;
+ let dragPointerId=null;
+
+ function readJSON(key,fallback){
+  try{return JSON.parse(localStorage.getItem(key)||'null')||fallback}catch(e){return fallback}
+ }
+ function setCardSize(card,size){
+  card.classList.remove('size-small','size-large','size-medium');
+  card.classList.add('size-'+size);
+  const buttons=card.querySelectorAll('.size-controls button');
+  buttons.forEach(button=>button.classList.toggle('active',button.dataset.size===size));
+ }
+ function addControls(card,savedSizes){
+  let controls=card.querySelector('.order-controls');
+  if(!controls){controls=document.createElement('div');controls.className='order-controls';card.prepend(controls)}
+  controls.innerHTML='';
+  const label=document.createElement('span');
+  label.className='order-label';
+  label.textContent='つかんで移動';
+  controls.appendChild(label);
+
+  const handle=document.createElement('button');
+  handle.type='button';
+  handle.className='drag-handle';
+  handle.textContent='☰';
+  handle.setAttribute('aria-label','長押ししてドラッグ移動');
+  handle.title='長押ししてドラッグ移動';
+  controls.appendChild(handle);
+
+  const sizeWrap=document.createElement('div');
+  sizeWrap.className='size-controls';
+  ['small','large'].forEach(size=>{
+   const button=document.createElement('button');
+   button.type='button';
+   button.dataset.size=size;
+   button.textContent=size==='small'?'小':'大';
+   button.addEventListener('click',()=>{
+    setCardSize(card,size);
     requestAnimationFrame(fitGridRows);
    });
-   wrap.appendChild(btn);
+   sizeWrap.appendChild(button);
   });
-  controls.appendChild(wrap);
- });
-  let saved=[];try{saved=JSON.parse(localStorage.getItem(ORDER_KEY)||'[]')}catch(e){}
+  controls.appendChild(sizeWrap);
+
+  handle.addEventListener('pointerdown',event=>{
+   if(!document.body.classList.contains('reorder-mode'))return;
+   event.preventDefault();
+   dragged=card;
+   dragPointerId=event.pointerId;
+   card.classList.add('is-dragging');
+   document.body.classList.add('dragging-card');
+  });
+  const initial=savedSizes[card.id];
+  const size=initial==='medium'?'large':(initial==='small'||initial==='large'?initial:
+   (card.id==='selectedDayCard'||card.id==='cycleChangeCard'?'large':'small'));
+  setCardSize(card,size);
+ }
+
+ function applySavedLayout(){
+  const savedSizes=readJSON(SIZE_KEY,{});
+  pinnedIds.forEach(id=>{
+   const pinned=document.getElementById(id);
+   const oldControls=pinned?.querySelector('.order-controls');
+   if(oldControls)oldControls.remove();
+  });
   const current=cards();
-  const byId=new Map(current.map(el=>[el.id,el]));
+  current.forEach(card=>addControls(card,savedSizes));
+
+  // 旧バージョンで保存された「中」は、新しい「大」に引き継ぐ
+  const savedOrder=readJSON(ORDER_KEY,[]);
+  const byId=new Map(cards().map(card=>[card.id,card]));
+  const pinned=pinnedIds.map(id=>document.getElementById(id)).filter(Boolean);
   let anchor=toolbar;
-  saved.forEach(id=>{const el=byId.get(id);if(el){anchor.after(el);anchor=el;byId.delete(id)}});
-  byId.forEach(el=>{anchor.after(el);anchor=el});
-  if(!saved.length){
-   const chat=document.getElementById('chatCard'),calendar=document.getElementById('calendarCard');
-   if(chat&&calendar){toolbar.after(chat);chat.after(calendar);}
-  }
- }
- function cardKey(el){return el.id}
- function refreshButtons(){
-  const list=cards();
-  list.forEach((el,i)=>{
-   const up=el.querySelector('.move-up'),down=el.querySelector('.move-down');
-   if(up)up.disabled=i===0;
-   if(down)down.disabled=i===list.length-1;
+  pinned.forEach(card=>{anchor.after(card);anchor=card});
+  savedOrder.forEach(id=>{
+   const card=byId.get(id);
+   if(card){anchor.after(card);anchor=card;byId.delete(id)}
   });
+  byId.forEach(card=>{anchor.after(card);anchor=card});
  }
+
  function setMode(on){
   document.body.classList.toggle('reorder-mode',on);
-  start.classList.toggle('hidden',on);confirm.classList.toggle('hidden',!on);cancel.classList.toggle('hidden',!on);
-  hint.textContent=on?'↑↓で順番を調整して「決定」を押してね。':'カードの表示順を自分好みに変更できます。';
-  refreshButtons();
+  start.classList.toggle('hidden',on);
+  confirm.classList.toggle('hidden',!on);
+  cancel.classList.toggle('hidden',!on);
+  hint.textContent=on?'カードの☰を長押しして移動。サイズは「小・大」から選んでね。':'カレンダーとチャッピー欄以外は、順番とサイズを変更できます。';
+  requestAnimationFrame(fitGridRows);
  }
- cards().forEach(el=>{
-  const up=el.querySelector('.move-up'),down=el.querySelector('.move-down');
-  up.addEventListener('click',()=>{const prev=el.previousElementSibling;if(prev&&prev!==toolbar)prev.before(el);refreshButtons()});
-  down.addEventListener('click',()=>{const next=el.nextElementSibling;if(next&&next!==toolbar)next.after(el);refreshButtons()});
+ function finishDrag(){
+  if(dragged)dragged.classList.remove('is-dragging');
+  dragged=null;
+  dragPointerId=null;
+  document.body.classList.remove('dragging-card');
+  requestAnimationFrame(fitGridRows);
+ }
+ document.addEventListener('pointermove',event=>{
+  if(!dragged||event.pointerId!==dragPointerId)return;
+  const target=document.elementFromPoint(event.clientX,event.clientY)?.closest('section.card');
+  if(!target||target===dragged||!cards().includes(target))return;
+  const rect=target.getBoundingClientRect();
+  const dx=(event.clientX-(rect.left+rect.width/2))/Math.max(rect.width,1);
+  const dy=(event.clientY-(rect.top+rect.height/2))/Math.max(rect.height,1);
+  const insertBefore=Math.abs(dx)>Math.abs(dy)?dx<0:dy<0;
+  if(insertBefore)target.before(dragged);
+  else target.after(dragged);
  });
- start.addEventListener('click',()=>{originalOrder=cards().slice();setMode(true)});
- cancel.addEventListener('click',()=>{let anchor=toolbar;originalOrder.forEach(el=>{anchor.after(el);anchor=el});setMode(false)});
- confirm.addEventListener('click',()=>{localStorage.setItem(ORDER_KEY,JSON.stringify(cards().map(cardKey)));setMode(false)});
- applySavedOrder();
+ document.addEventListener('pointerup',event=>{
+  if(dragged&&event.pointerId===dragPointerId)finishDrag();
+ });
+ document.addEventListener('pointercancel',event=>{
+  if(dragged&&event.pointerId===dragPointerId)finishDrag();
+ });
+
+ start.addEventListener('click',()=>{
+  originalOrder=cards().slice();
+  originalSizes={};
+  cards().forEach(card=>originalSizes[card.id]=card.classList.contains('size-large')?'large':'small');
+  setMode(true);
+ });
+ cancel.addEventListener('click',()=>{
+  finishDrag();
+  let anchor=document.getElementById('chatCard');
+  originalOrder.forEach(card=>{anchor.after(card);anchor=card});
+  Object.entries(originalSizes).forEach(([id,size])=>{
+   const card=document.getElementById(id);
+   if(card)setCardSize(card,size);
+  });
+  setMode(false);
+ });
+ confirm.addEventListener('click',()=>{
+  finishDrag();
+  try{
+   localStorage.setItem(ORDER_KEY,JSON.stringify(cards().map(card=>card.id)));
+   const sizes={};
+   cards().forEach(card=>sizes[card.id]=card.classList.contains('size-large')?'large':'small');
+   localStorage.setItem(SIZE_KEY,JSON.stringify(sizes));
+  }catch(error){alert('配置を保存できませんでした。端末の空き容量を確認してね。');return}
+  setMode(false);
+ });
+ applySavedLayout();
 })();
 
 // カードの実際の高さに合わせて行数を調整し、サイズ違いのカード間の空白を減らす
