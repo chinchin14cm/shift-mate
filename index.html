@@ -94,7 +94,7 @@ header{order:-4}#orderToolbar{order:-3}
 <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
-<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.9.1</span></header>
+<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.10</span></header>
 <section class="card" id="orderToolbar">
  <button class="primary" id="startReorder">並び順を編集</button>
  <span class="small" id="orderHint">カードの表示順を自分好みに変更できます。</span>
@@ -106,6 +106,10 @@ header{order:-4}#orderToolbar{order:-3}
  <h2 class="sectiontitle">クラウドバックアップ</h2>
  <div class="row" style="flex-wrap:wrap"><button class="primary" id="googleLogin">Googleでログイン</button><button id="googleLogout" class="hidden">ログアウト</button></div>
  <p class="small" id="cloudStatus" aria-live="polite">未ログイン：この端末内に保存されています。Googleログインするとクラウド同期できます。</p>
+ <div style="height:8px"></div>
+ <div class="sectiontitle">毎朝9時の通知</div>
+ <div class="row" style="flex-wrap:wrap"><button class="primary" id="enablePush">通知を有効にする</button></div>
+ <p class="small" id="pushStatus" aria-live="polite">通知を使うには、Googleログイン後にこのボタンを押してね。</p>
 </section>
 <section class="card" id="calendarCard">
  <div class="order-controls"><span class="order-label">このカードの位置</span><button type="button" class="move-up" aria-label="上へ移動">↑</button><button type="button" class="move-down" aria-label="下へ移動">↓</button></div>
@@ -172,6 +176,10 @@ header{order:-4}#orderToolbar{order:-3}
 <section class="card" id="versionHistory">
  <h2 class="sectiontitle">更新履歴</h2>
   
+ <div class="item" style="display:block">
+  <strong>ver 1.10 - プッシュ通知の登録に対応</strong>
+  <small>Googleログイン後に通知を有効化できるようにしました。iPhoneのホーム画面アプリから通知購読を登録し、Supabaseに安全に保存します。</small>
+ </div>
  <div class="item" style="display:block">
   <strong>ver 1.9.1 - カード間隔を均一化</strong>
   <small>カードの実際の表示高さを基準に配置を計算し直し、画面幅による隙間の違いを解消。カード間隔を10pxに統一しました。並べ替え・サイズ保存・予定データはそのままです。</small>
@@ -282,7 +290,66 @@ logoutBtn?.addEventListener('click',async()=>{if(!confirm('ログアウトする
 if(supabaseClient){
  supabaseClient.auth.onAuthStateChange((_event,session)=>{setTimeout(()=>handleAuthSession(session),0);});
  supabaseClient.auth.getSession().then(({data})=>handleAuthSession(data.session));
-}else{setCloudStatus('認証ライブラリを読み込めませんでした。インターネット接続を確認してください。');}
+ }else{setCloudStatus('認証ライブラリを読み込めませんでした。インターネット接続を確認してください。');}
+
+// Web Push: public key is served by the Edge Function; the private key never reaches this app.
+const PUSH_ENDPOINT=SUPABASE_URL+'/functions/v1/shiftmate-reminders';
+const pushButton=document.getElementById('enablePush');
+const pushStatusEl=document.getElementById('pushStatus');
+function setPushStatus(message){if(pushStatusEl)pushStatusEl.textContent=message;}
+function base64UrlToUint8Array(value){
+ const padding='='.repeat((4-value.length%4)%4);
+ const base64=(value+padding).replace(/-/g,'+').replace(/_/g,'/');
+ const raw=atob(base64);const output=new Uint8Array(raw.length);
+ for(let i=0;i<raw.length;i++)output[i]=raw.charCodeAt(i);
+ return output;
+}
+async function enablePushNotifications(){
+ if(!supabaseClient){setPushStatus('Supabaseに接続できません。通信を確認してね。');return;}
+ const {data:sessionData,error:sessionError}=await supabaseClient.auth.getSession();
+ const session=sessionData?.session;
+ if(sessionError||!session?.access_token){setPushStatus('先にGoogleログインしてね。');return;}
+ if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
+  setPushStatus('このブラウザはプッシュ通知に対応していません。iPhoneではホーム画面に追加したShiftMateを開いてね。');return;
+ }
+ if(!window.matchMedia('(display-mode: standalone)').matches && !navigator.standalone){
+  setPushStatus('iPhoneではSafariの共有メニューから「ホーム画面に追加」し、ホーム画面のShiftMateを開いて操作してね。');return;
+ }
+ if(pushButton)pushButton.disabled=true;
+ setPushStatus('通知の設定を確認しています…');
+ try{
+  const keyResponse=await fetch(PUSH_ENDPOINT,{method:'GET'});
+  const keyData=await keyResponse.json();
+  if(!keyResponse.ok||!keyData.publicKey)throw new Error(keyData.error||'公開鍵を取得できませんでした');
+  const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+  if(permission!=='granted'){setPushStatus('通知が許可されませんでした。iPhoneの設定からShiftMateの通知を許可してね。');return;}
+  const registration=await navigator.serviceWorker.register('./sw.js?v=1.10');
+  await navigator.serviceWorker.ready;
+  const applicationServerKey=base64UrlToUint8Array(keyData.publicKey);
+  let subscription=await registration.pushManager.getSubscription();
+  if(subscription){
+   const oldKey=subscription.options?.applicationServerKey;
+   if(oldKey){
+    const oldBytes=new Uint8Array(oldKey);
+    const mismatch=oldBytes.length!==applicationServerKey.length||oldBytes.some((v,i)=>v!==applicationServerKey[i]);
+    if(mismatch){await subscription.unsubscribe();subscription=null;}
+   }
+  }
+  if(!subscription){subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey});}
+  const response=await fetch(PUSH_ENDPOINT,{
+   method:'POST',
+   headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+   body:JSON.stringify({action:'subscribe',subscription:subscription.toJSON()})
+  });
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(result.error||'通知先の保存に失敗しました');
+  setPushStatus('✓ 通知を有効にしたよ！毎朝9時に明日の予定・手動変更した勤務をお知らせするね。');
+ }catch(error){
+  console.error('Push setup failed:',error);
+  setPushStatus('通知設定に失敗しました：'+(error?.message||'原因を確認できませんでした'));
+ }finally{if(pushButton)pushButton.disabled=false;}
+}
+pushButton?.addEventListener('click',enablePushNotifications);
 
 const STORAGE_KEY='shiftmate_v3_data';
 const BASE=new Date(2026,10,11); // 2026-11-11 is cycle day 1
@@ -633,7 +700,7 @@ if('ResizeObserver' in window){
 window.addEventListener('resize',fitGridRows);
 requestAnimationFrame(fitGridRows);
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.9.1').catch(()=>{})); }
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.10').catch(()=>{})); }
 </script>
 </body>
 </html>
