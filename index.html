@@ -318,7 +318,7 @@ async function enablePushNotifications(){
  if(pushButton)pushButton.disabled=true;
  setPushStatus('通知の設定を確認しています…');
  try{
-  const keyResponse=await fetch(PUSH_ENDPOINT,{method:'GET'});
+  const keyResponse=await fetch(PUSH_ENDPOINT,{method:'GET',headers:{'Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_ANON_KEY}});
   const keyData=await keyResponse.json();
   if(!keyResponse.ok||!keyData.publicKey)throw new Error(keyData.error||'公開鍵を取得できませんでした');
   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
