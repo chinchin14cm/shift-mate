@@ -98,7 +98,7 @@ body.reorder-mode{user-select:none}
 <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
-<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.12</span></header>
+<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.13</span></header>
 <section class="card" id="orderToolbar">
  <button class="primary" id="startReorder">並び順を編集</button>
  <span class="small" id="orderHint">カードの表示順を自分好みに変更できます。</span>
@@ -179,6 +179,10 @@ body.reorder-mode{user-select:none}
 
 <section class="card" id="versionHistory">
  <h2 class="sectiontitle">更新履歴</h2>
+ <div class="item" style="display:block">
+  <strong>ver 1.13 - 起動日と通知状態の表示を修正</strong>
+  <small>起動時に当日を選択し、端末の通知許可・購読状態を色付きで表示します。</small>
+ </div>
  <div class="item" style="display:block">
   <strong>ver 1.12 - ドラッグ移動と大・小サイズに対応</strong>
   <small>カレンダーとチャッピー欄を固定し、それ以外のカードをドラッグで並べ替えできます。カードサイズは大・小の2種類になり、決定・キャンセルにも対応しました。</small>
@@ -304,7 +308,30 @@ if(supabaseClient){
 const PUSH_ENDPOINT=SUPABASE_URL+'/functions/v1/shiftmate-reminders';
 const pushButton=document.getElementById('enablePush');
 const pushStatusEl=document.getElementById('pushStatus');
-function setPushStatus(message){if(pushStatusEl)pushStatusEl.textContent=message;}
+function setPushStatus(message,state){
+ if(!pushStatusEl)return;
+ pushStatusEl.textContent=message;
+ pushStatusEl.style.cssText+=';display:block;padding:10px 12px;border-radius:10px;font-weight:700;';
+ pushStatusEl.style.background=state==='on'?'#dcfce7':state==='off'?'#fee2e2':'#f1f5f9';
+ pushStatusEl.style.color=state==='on'?'#166534':state==='off'?'#991b1b':'#475569';
+}
+async function refreshPushStatus(){
+ if(!('Notification' in window)||!('serviceWorker' in navigator)||!('PushManager' in window)){
+  setPushStatus('通知 OFF（この環境ではプッシュ通知を確認できません）','off');return;
+ }
+ if(Notification.permission!=='granted'){
+  setPushStatus('通知 OFF（iPhone側で通知が許可されていません）','off');return;
+ }
+ try{
+  const registration=await navigator.serviceWorker.getRegistration();
+  const subscription=registration?await registration.pushManager.getSubscription():null;
+  if(subscription)setPushStatus('✓ 通知 ON（この端末の購読登録を確認済み）','on');
+  else setPushStatus('通知 OFF（この端末の購読登録がありません）','off');
+ }catch(error){
+  console.error('Push status check failed:',error);
+  setPushStatus('通知状態を確認できませんでした。通知設定ボタンで再確認してね。','off');
+ }
+}
 function base64UrlToUint8Array(value){
  const padding='='.repeat((4-value.length%4)%4);
  const base64=(value+padding).replace(/-/g,'+').replace(/_/g,'/');
@@ -331,7 +358,7 @@ async function enablePushNotifications(){
   if(!keyResponse.ok||!keyData.publicKey)throw new Error('HTTP '+keyResponse.status+' / '+(keyData.error||JSON.stringify(keyData)));
   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
   if(permission!=='granted'){setPushStatus('通知が許可されませんでした。iPhoneの設定からShiftMateの通知を許可してね。');return;}
-  const registration=await navigator.serviceWorker.register('./sw.js?v=1.12');
+  const registration=await navigator.serviceWorker.register('./sw.js?v=1.13');
   await navigator.serviceWorker.ready;
   const applicationServerKey=base64UrlToUint8Array(keyData.publicKey);
   let subscription=await registration.pushManager.getSubscription();
@@ -351,7 +378,7 @@ async function enablePushNotifications(){
   });
   const result=await response.json().catch(()=>({}));
   if(!response.ok)throw new Error(result.error||'通知先の保存に失敗しました');
-  setPushStatus('✓ 通知を有効にしたよ！毎朝9時に明日の予定・手動変更した勤務をお知らせするね。');
+  setPushStatus('✓ 通知 ON（この端末の購読登録を確認済み）。毎朝9時の通知機能を利用中です。','on');
  }catch(error){
   console.error('Push setup failed:',error);
   setPushStatus('通知設定に失敗しました：'+(error?.message||'原因を確認できませんでした'));
@@ -365,7 +392,8 @@ const EXCEPTION_SEEDS=[new Date(2026,10,14),new Date(2026,10,22)];
 const names=['日勤','夜勤・半泊','明け','日勤','夜勤・半泊','明け','休み','休み'];
 let data={events:[],overrides:{},cycleChanges:[]};
 try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(saved&&typeof saved==='object')data={...data,...saved,cycleChanges:Array.isArray(saved.cycleChanges)?saved.cycleChanges:[]}}catch(e){}
-let view=new Date(2026,10,1), selected=new Date(2026,10,11);
+const openedToday=new Date();
+let view=new Date(openedToday.getFullYear(),openedToday.getMonth(),1), selected=new Date(openedToday.getFullYear(),openedToday.getMonth(),openedToday.getDate());
 const key=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const parse=k=>{const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
 const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
@@ -788,7 +816,7 @@ if('ResizeObserver' in window){
 window.addEventListener('resize',fitGridRows);
 requestAnimationFrame(fitGridRows);
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.11').catch(()=>{})); }
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.13').then(()=>navigator.serviceWorker.ready).then(()=>refreshPushStatus()).catch(error=>{console.error('Service worker registration failed:',error);refreshPushStatus();})); }
 </script>
 </body>
 </html>
