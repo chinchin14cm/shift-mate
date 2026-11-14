@@ -358,7 +358,7 @@ async function enablePushNotifications(){
   if(!keyResponse.ok||!keyData.publicKey)throw new Error('HTTP '+keyResponse.status+' / '+(keyData.error||JSON.stringify(keyData)));
   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
   if(permission!=='granted'){setPushStatus('通知が許可されませんでした。iPhoneの設定からShiftMateの通知を許可してね。');return;}
-  const registration=await navigator.serviceWorker.register('./sw.js?v=1.13');
+  const registration=await navigator.serviceWorker.register('./sw.js?v=1.13.1');
   await navigator.serviceWorker.ready;
   const applicationServerKey=base64UrlToUint8Array(keyData.publicKey);
   let subscription=await registration.pushManager.getSubscription();
@@ -816,7 +816,7 @@ if('ResizeObserver' in window){
 window.addEventListener('resize',fitGridRows);
 requestAnimationFrame(fitGridRows);
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.13').then(()=>navigator.serviceWorker.ready).then(()=>refreshPushStatus()).catch(error=>{console.error('Service worker registration failed:',error);refreshPushStatus();})); }
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.13.1').then(()=>navigator.serviceWorker.ready).then(()=>refreshPushStatus()).catch(error=>{console.error('Service worker registration failed:',error);refreshPushStatus();})); }
 </script>
 </body>
 </html>
