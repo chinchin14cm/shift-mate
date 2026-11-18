@@ -91,7 +91,7 @@ body.reorder-mode{user-select:none}
 
 @media(max-width:350px){body{grid-template-columns:1fr}.card.size-small{grid-column:1/-1}}
 
-/* v1.14.11: 全画面の入力欄サイズを強制統一 */
+/* v1.14.12: 全画面の入力欄サイズを強制統一 */
 input:not([type=file]):not([type=checkbox]):not([type=radio]),
 select,
 textarea{
@@ -166,13 +166,13 @@ input[type="time"]{
 
 /* v1.14.11: multi-day events render as one bar above each calendar week */
 #calendarCard .days{display:flex;flex-direction:column;gap:3px}
-#calendarCard .calendar-week-row{display:flex;flex-direction:column;gap:2px;min-width:0}
-#calendarCard .calendar-event-lanes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:14px;gap:2px;min-height:14px}
-#calendarCard .calendar-event-bar{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;background:#ede9fe;color:#5b21b6;border-radius:5px;padding:0 5px;font-size:9px;font-weight:800;line-height:14px;height:14px}
-#calendarCard .calendar-event-bar.is-start{border-top-left-radius:6px;border-bottom-left-radius:6px}
-#calendarCard .calendar-event-bar.is-end{border-top-right-radius:6px;border-bottom-right-radius:6px}
+#calendarCard .calendar-week-row{position:relative;display:block;min-width:0}
+#calendarCard .calendar-event-lanes{position:absolute;z-index:2;left:0;right:0;bottom:9px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:14px;gap:2px;pointer-events:none}
+#calendarCard .calendar-event-bar{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;background:#ede9fe;color:#5b21b6;border-radius:0;padding:0 5px;font-size:9px;font-weight:800;line-height:14px;height:14px;pointer-events:none}
+#calendarCard .calendar-event-bar.is-start{border-radius:6px 0 0 6px}
+#calendarCard .calendar-event-bar.is-end{border-radius:0 6px 6px 0}
 #calendarCard .calendar-week-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
-#calendarCard .calendar-week-days .day{min-width:0}
+#calendarCard .calendar-week-days .day{min-width:0;padding-bottom:24px}
 #calendarCard .event-range{height:11px;margin-top:2px;padding:0 2px;background:#ede9fe;color:#5b21b6;font-size:8px;font-weight:800;line-height:11px;white-space:nowrap;overflow:hidden;border-radius:5px}
 #calendarCard .event-range-title{min-width:0;overflow:hidden;text-overflow:ellipsis}
 
@@ -274,7 +274,7 @@ input[type="time"]{
 
 <section class="card" id="versionHistory">
  <h2 class="sectiontitle">更新履歴</h2>
- <div class="item" style="display:block"><strong>ver 1.14.10 - 更新反映とキャッシュ制御を改善</strong><small>Service Workerの更新確認を強化し、古い画面が残りにくいようにしました。</small></div><div class="item" style="display:block"><strong>ver 1.14.11 - 複数日予定を週単位の横長バーで表示</strong><small>複数日にわたる予定を日付枠ごとに分割せず、週の上部に期間をつなぐバーで表示します。</small></div><div class="item" style="display:block"><strong>ver 1.14 - 複数日にわたる予定に対応</strong><small>予定の終了日・終了時刻を設定でき、期間中の各日にカレンダー表示します。既存予定との互換性も維持しました。</small></div><div class="item" style="display:block"><strong>ver 1.13 - 起動日と通知状態の表示を修正</strong>
+ <div class="item" style="display:block"><strong>ver 1.14.10 - 更新反映とキャッシュ制御を改善</strong><small>Service Workerの更新確認を強化し、古い画面が残りにくいようにしました。</small></div><div class="item" style="display:block"><strong>ver 1.14.12 - 複数日予定を日付枠内の横長バーで表示</strong><small>複数日にわたる予定を日付枠の下部に重ね、期間をつなぐ1本のバーで表示します。</small></div><div class="item" style="display:block"><strong>ver 1.14 - 複数日にわたる予定に対応</strong><small>予定の終了日・終了時刻を設定でき、期間中の各日にカレンダー表示します。既存予定との互換性も維持しました。</small></div><div class="item" style="display:block"><strong>ver 1.13 - 起動日と通知状態の表示を修正</strong>
   <small>起動時に当日を選択し、端末の通知許可・購読状態を色付きで表示します。</small>
  </div>
  <div class="item" style="display:block">
@@ -452,7 +452,7 @@ async function enablePushNotifications(){
   if(!keyResponse.ok||!keyData.publicKey)throw new Error('HTTP '+keyResponse.status+' / '+(keyData.error||JSON.stringify(keyData)));
   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
   if(permission!=='granted'){setPushStatus('通知が許可されませんでした。iPhoneの設定からShiftMateの通知を許可してね。');return;}
-  const registration=await navigator.serviceWorker.register('./sw.js?v=1.14.11',{updateViaCache:'none'});
+  const registration=await navigator.serviceWorker.register('./sw.js?v=1.14.12',{updateViaCache:'none'});
   await navigator.serviceWorker.ready;
   const applicationServerKey=base64UrlToUint8Array(keyData.publicKey);
   let subscription=await registration.pushManager.getSubscription();
@@ -548,7 +548,7 @@ function render(){
    bar.style.gridColumn=(firstCol+1)+" / "+(lastCol+2);bar.style.gridRow=String(lane+1);bar.title=e.title;
    bar.textContent=(e.date>=key(weekStart)&&e.time?e.time+" ":"")+e.title;lanes.appendChild(bar);
   });
-  if(laneEnds.length){lanes.style.gridTemplateRows="repeat("+laneEnds.length+",14px)";}else{lanes.style.display="none";}row.appendChild(lanes);
+  if(laneEnds.length){lanes.style.gridTemplateRows="repeat("+laneEnds.length+",14px)";lanes.style.bottom=(8+(laneEnds.length-1)*16)+"px";}else{lanes.style.display="none";}row.appendChild(lanes);
   const days=document.createElement("div");days.className="calendar-week-days";
   for(let col=0;col<7;col++){
    const d=addDays(weekStart,col),k=key(d),shift=shiftFor(d);
@@ -932,7 +932,7 @@ if('ResizeObserver' in window){
 window.addEventListener('resize',fitGridRows);
 requestAnimationFrame(fitGridRows);
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.14.11',{updateViaCache:'none'}).then(async registration=>{await registration.update();await navigator.serviceWorker.ready;refreshPushStatus();}).catch(error=>{console.error('Service worker registration failed:',error);refreshPushStatus();})); }
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.14.12',{updateViaCache:'none'}).then(async registration=>{await registration.update();await navigator.serviceWorker.ready;refreshPushStatus();}).catch(error=>{console.error('Service worker registration failed:',error);refreshPushStatus();})); }
 </script>
 </body>
 </html>
