@@ -262,7 +262,7 @@ input[type="time"]{
 
 <section class="card" id="versionHistory">
  <h2 class="sectiontitle">更新履歴</h2>
- <div class="item" style="display:block"><div class="item" style="display:block"><strong>ver 1.14.10 - 更新反映とキャッシュ制御を改善</strong><small>Service Workerの更新確認を強化し、古い画面が残りにくいようにしました。</small></div><div class="item" style="display:block"><strong>ver 1.14 - 複数日にわたる予定に対応</strong><small>予定の終了日・終了時刻を設定でき、期間中の各日にカレンダー表示します。既存予定との互換性も維持しました。</small></div><div class="item" style="display:block"><strong>ver 1.13 - 起動日と通知状態の表示を修正</strong>
+ <div class="item" style="display:block"><strong>ver 1.14.10 - 更新反映とキャッシュ制御を改善</strong><small>Service Workerの更新確認を強化し、古い画面が残りにくいようにしました。</small></div><div class="item" style="display:block"><strong>ver 1.14 - 複数日にわたる予定に対応</strong><small>予定の終了日・終了時刻を設定でき、期間中の各日にカレンダー表示します。既存予定との互換性も維持しました。</small></div><div class="item" style="display:block"><strong>ver 1.13 - 起動日と通知状態の表示を修正</strong>
   <small>起動時に当日を選択し、端末の通知許可・購読状態を色付きで表示します。</small>
  </div>
  <div class="item" style="display:block">
@@ -902,7 +902,7 @@ if('ResizeObserver' in window){
 window.addEventListener('resize',fitGridRows);
 requestAnimationFrame(fitGridRows);
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.14.10',{updateViaCache:'none'}).then(()=>navigator.serviceWorker.ready).then(()=>refreshPushStatus()).catch(error=>{console.error('Service worker registration failed:',error);refreshPushStatus();})); }
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.14.10',{updateViaCache:'none'}).then(async registration=>{await registration.update();await navigator.serviceWorker.ready;refreshPushStatus();}).catch(error=>{console.error('Service worker registration failed:',error);refreshPushStatus();})); }
 </script>
 </body>
 </html>
