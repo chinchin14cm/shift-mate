@@ -91,7 +91,7 @@ body.reorder-mode{user-select:none}
 
 @media(max-width:350px){body{grid-template-columns:1fr}.card.size-small{grid-column:1/-1}}
 
-/* v1.14.5: 全画面の入力欄サイズを強制統一 */
+/* v1.14.6: 全画面の入力欄サイズを強制統一 */
 input:not([type=file]):not([type=checkbox]):not([type=radio]),
 select,
 textarea{
@@ -137,6 +137,32 @@ textarea{height:42px!important;resize:vertical}
   align-self:center!important;
 }
 
+
+/* v1.14.6: normalize native iOS date/time controls across the app */
+input[type="date"],
+input[type="time"]{
+  -webkit-appearance:none!important;
+  appearance:none!important;
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  height:42px!important;
+  min-height:0!important;
+  max-height:42px!important;
+  min-block-size:0!important;
+  block-size:42px!important;
+  padding:0 10px!important;
+  margin:0!important;
+  border:1px solid #d7deea!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  color:#172033!important;
+  font-family:inherit!important;
+  font-size:16px!important;
+  line-height:40px!important;
+  vertical-align:middle!important;
+}
+
 </style>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -145,7 +171,7 @@ textarea{height:42px!important;resize:vertical}
 <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
-<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.14.5</span></header>
+<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.14.6</span></header>
 <section class="card" id="orderToolbar">
  <button class="primary" id="startReorder">並び順を編集</button>
  <span class="small" id="orderHint">カードの表示順を自分好みに変更できます。</span>
@@ -404,7 +430,7 @@ async function enablePushNotifications(){
   if(!keyResponse.ok||!keyData.publicKey)throw new Error('HTTP '+keyResponse.status+' / '+(keyData.error||JSON.stringify(keyData)));
   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
   if(permission!=='granted'){setPushStatus('通知が許可されませんでした。iPhoneの設定からShiftMateの通知を許可してね。');return;}
-  const registration=await navigator.serviceWorker.register('./sw.js?v=1.14.5');
+  const registration=await navigator.serviceWorker.register('./sw.js?v=1.14.6');
   await navigator.serviceWorker.ready;
   const applicationServerKey=base64UrlToUint8Array(keyData.publicKey);
   let subscription=await registration.pushManager.getSubscription();
