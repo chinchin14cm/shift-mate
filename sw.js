@@ -1,4 +1,4 @@
-const CACHE = 'shiftmate-shell-v1.14.8-event-range-bars';;;;;const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'shiftmate-shell-v1.14.9-network-first-html';;;;;const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));
@@ -16,9 +16,22 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request))
-  );
+  const request = event.request;
+  const path = new URL(request.url).pathname;
+  const isPage = request.mode === 'navigate' || path.endsWith('/index.html') || path.endsWith('/shift-mate/');
+  if (isPage) {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' }).then(response => {
+        if (response && response.ok) {
+          const copy = response.clone();
+          event.waitUntil(caches.open(CACHE).then(cache => cache.put(request, copy)));
+        }
+        return response;
+      }).catch(() => caches.match(request).then(cached => cached || caches.match('./index.html')))
+    );
+    return;
+  }
+  event.respondWith(caches.match(request).then(cached => cached || fetch(request)));
 });
 
 self.addEventListener('push', event => {
