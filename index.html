@@ -86,7 +86,7 @@ body.reorder-mode{user-select:none}
 #calendarCard .s-off{color:#047857;background:#d1fae5}
 .payment-mark{display:block;font-size:7px;font-weight:850;line-height:1.15;margin-top:1px;white-space:nowrap;overflow:hidden}
 .payment-mark.payday{color:#0f766e}.payment-mark.bonus{color:#b45309}
-#eventTime{max-width:116px;flex:0 0 116px;padding:10px 6px;font-size:13px}
+#eventForm{display:grid;gap:8px}#eventTitle{width:100%}.event-form-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);gap:6px;align-items:center}.event-form-row label{font-size:11px;color:#64748b;white-space:nowrap}.event-form-row input{min-width:0;padding:10px 6px;font-size:13px}#addEvent{width:100%}
 @media(max-width:480px){body{padding:9px 8px 26px;column-gap:10px;row-gap:10px}.card{border-radius:15px}#calendarCard .day{min-height:48px}#calendarCard .week,#calendarCard .days{gap:2px}}
 
 @media(max-width:350px){body{grid-template-columns:1fr}.card.size-small{grid-column:1/-1}}
@@ -98,7 +98,7 @@ body.reorder-mode{user-select:none}
 <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
-<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.13</span></header>
+<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.14</span></header>
 <section class="card" id="orderToolbar">
  <button class="primary" id="startReorder">並び順を編集</button>
  <span class="small" id="orderHint">カードの表示順を自分好みに変更できます。</span>
@@ -133,7 +133,7 @@ body.reorder-mode{user-select:none}
  <p class="small description">個別変更はその日だけに適用され、8日周期はずれません。</p>
  <div style="height:10px"></div>
  <div class="sectiontitle">プライベートの予定を追加</div>
- <div class="row"><input id="eventTitle" placeholder="例：デート、通院、誕生日"><input id="eventTime" type="time" aria-label="予定の開始時刻"><button class="primary" id="addEvent">予定を追加</button></div>
+ <div id="eventForm"><input id="eventTitle" placeholder="例：デート、通院、誕生日"><div class="event-form-row"><label for="eventTime">開始</label><input id="eventTime" type="time" aria-label="予定の開始時刻"><label for="eventEndDate">終了日</label><input id="eventEndDate" type="date" aria-label="予定の終了日"></div><div class="event-form-row"><label for="eventEndTime">終了</label><input id="eventEndTime" type="time" aria-label="予定の終了時刻"><span></span><button class="primary" id="addEvent">予定を追加</button></div><p class="small" style="margin:0">開始日は選択中の日付。終了日を変えると、複数日にわたる予定にできます。</p></div>
  <div id="eventList"></div>
 </section>
 <section class="card" id="workRulesCard">
@@ -179,8 +179,7 @@ body.reorder-mode{user-select:none}
 
 <section class="card" id="versionHistory">
  <h2 class="sectiontitle">更新履歴</h2>
- <div class="item" style="display:block">
-  <strong>ver 1.13 - 起動日と通知状態の表示を修正</strong>
+ <div class="item" style="display:block"><strong>ver 1.14 - 複数日にわたる予定に対応</strong><small>予定の終了日・終了時刻を設定でき、期間中の各日にカレンダー表示します。既存予定との互換性も維持しました。</small></div><div class="item" style="display:block"><strong>ver 1.13 - 起動日と通知状態の表示を修正</strong>
   <small>起動時に当日を選択し、端末の通知許可・購読状態を色付きで表示します。</small>
  </div>
  <div class="item" style="display:block">
@@ -358,7 +357,7 @@ async function enablePushNotifications(){
   if(!keyResponse.ok||!keyData.publicKey)throw new Error('HTTP '+keyResponse.status+' / '+(keyData.error||JSON.stringify(keyData)));
   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
   if(permission!=='granted'){setPushStatus('通知が許可されませんでした。iPhoneの設定からShiftMateの通知を許可してね。');return;}
-  const registration=await navigator.serviceWorker.register('./sw.js?v=1.13.1');
+  const registration=await navigator.serviceWorker.register('./sw.js?v=1.14.0');
   await navigator.serviceWorker.ready;
   const applicationServerKey=base64UrlToUint8Array(keyData.publicKey);
   let subscription=await registration.pushManager.getSubscription();
@@ -398,6 +397,9 @@ const key=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${Str
 const parse=k=>{const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
 const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
 const diffDays=(a,b)=>Math.round((Date.UTC(a.getFullYear(),a.getMonth(),a.getDate())-Date.UTC(b.getFullYear(),b.getMonth(),b.getDate()))/86400000);
+function eventEndDate(e){return e.endDate||e.date}
+function eventCoversDate(e,k){return e.date<=k&&eventEndDate(e)>=k}
+function validateEventRange(sd,st,ed,et){if(!sd||!ed)return '開始日と終了日を確認してね。';if(ed<sd)return '終了日は開始日以降にしてね。';if((st&&!et)||(!st&&et))return '開始時刻と終了時刻は、両方入力するか両方空欄にしてね。';if(sd===ed&&st&&et&&et<=st)return '同じ日の予定は、終了時刻を開始時刻より後にしてね。';return ''}
 function exceptionOff(d){
  return EXCEPTION_SEEDS.some(seed=>{const delta=diffDays(d,seed);return delta>=0&&delta%56===0});
 }
@@ -441,7 +443,7 @@ function render(){
   const d=addDays(start,i), k=key(d), s=shiftFor(d);
   const cell=document.createElement('button');cell.className='day'+(d.getMonth()!==view.getMonth()?' dim':'')+(key(d)===key(selected)?' selected':'');
   const cls=s.startsWith('日勤')?'s-day':s.startsWith('夜勤')?'s-night':s==='明け'?'s-after':'s-off';
-  const ev=data.events.filter(e=>e.date===k),payments=paymentLabels(d);
+  const ev=data.events.filter(e=>eventCoversDate(e,k)),payments=paymentLabels(d);
   const paymentHtml=payments.map(label=>'<div class="payment-mark '+(label.includes('ボーナス')?'bonus':'payday')+'">'+label+'</div>').join('');
   cell.innerHTML=`<div class="num">${d.getDate()}</div><div class="shift ${cls}">${s.replace('夜勤・','夜勤 ')}</div>${paymentHtml}${ev.slice(0,1).map(e=>`<div class="eventdot">● ${e.time?escapeHtml(e.time)+' ':''}${escapeHtml(e.title)}</div>`).join('')}${ev.length>1?`<div class="eventdot">ほか${ev.length-1}件</div>`:''}`;
   cell.addEventListener('click',()=>{selected=d;render();});cal.appendChild(cell);
@@ -454,16 +456,16 @@ function renderSelected(){
  document.getElementById('selectedTitle').textContent=`${selected.getFullYear()}年${selected.getMonth()+1}月${selected.getDate()}日`;
  document.getElementById('selectedInfo').innerHTML=`基本勤務：<b>${base}</b>　${data.overrides[k]?'（個別変更あり）':'（通常ルール）'}<br>現在の勤務：<b>${current}</b>${payments.length?'<br><b style="color:#0f766e">'+payments.join('・')+'</b>':''}`;
  document.getElementById('shiftOverride').value=data.overrides[k]||'';
- const list=document.getElementById('eventList');const ev=data.events.filter(e=>e.date===k);list.innerHTML=ev.length?'<div class="sectiontitle" style="margin-top:15px">この日の予定</div>':'';
- ev.forEach(e=>{const div=document.createElement('div');div.className='item';div.innerHTML=`<div><strong>${e.time?escapeHtml(e.time)+'　':''}${escapeHtml(e.title)}</strong><small>${e.date}</small></div><div class="actions"><button data-edit="${e.id}">編集</button><button class="danger" data-del="${e.id}">削除</button></div>`;list.appendChild(div)});
+ const list=document.getElementById('eventList');const ev=data.events.filter(e=>eventCoversDate(e,k));list.innerHTML=ev.length?'<div class="sectiontitle" style="margin-top:15px">この日の予定</div>':'';
+ ev.forEach(e=>{const div=document.createElement('div');div.className='item';const ed=eventEndDate(e);const period=e.date===ed?e.date:e.date+' 〜 '+ed;div.innerHTML='<div><strong>'+(e.time?escapeHtml(e.time)+'　':'')+escapeHtml(e.title)+'</strong><small>'+period+(e.endTime?' ／ 終了 '+escapeHtml(e.endTime):'')+'</small></div><div class="actions"><button data-edit="'+e.id+'">編集</button><button class="danger" data-del="'+e.id+'">削除</button></div>';list.appendChild(div)});
  list.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{data.events=data.events.filter(e=>e.id!==b.dataset.del);persist();render()});
- list.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{const e=data.events.find(x=>x.id===b.dataset.edit);const v=prompt('予定名を編集',e.title);if(v&&v.trim()){e.title=v.trim();const t=prompt('開始時刻（HH:MM）。時刻を消す場合は空欄',e.time||'');if(t!==null){if(!t.trim())delete e.time;else if(/^([01]\d|2[0-3]):[0-5]\d$/.test(t.trim()))e.time=t.trim();else{alert('時刻は09:30のように入力してね');return}}persist();render()}});
+ list.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{const e=data.events.find(x=>x.id===b.dataset.edit);if(!e)return;const title=prompt('予定名を編集',e.title);if(title===null||!title.trim())return;const sd=prompt('開始日（YYYY-MM-DD）',e.date);if(sd===null)return;const st=prompt('開始時刻（HH:MM）。時刻なしは空欄',e.time||'');if(st===null)return;const ed=prompt('終了日（YYYY-MM-DD）',eventEndDate(e));if(ed===null)return;const et=prompt('終了時刻（HH:MM）。時刻なしは空欄',e.endTime||'');if(et===null)return;const a=sd.trim(),bdate=ed.trim(),aTime=st.trim(),bTime=et.trim(),err=validateEventRange(a,aTime,bdate,bTime);if(err){alert(err);return}if((aTime&&!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(aTime))||(bTime&&!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(bTime))){alert('時刻は09:30の形式で入力してね');return}e.title=title.trim();e.date=a;if(aTime)e.time=aTime;else delete e.time;if(bdate!==a)e.endDate=bdate;else delete e.endDate;if(bTime)e.endTime=bTime;else delete e.endTime;persist();render()});
 }
 document.getElementById('prev').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()-1,1);render()};
 document.getElementById('next').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()+1,1);render()};
 document.getElementById('today').onclick=()=>{const n=new Date();view=new Date(n.getFullYear(),n.getMonth(),1);selected=n;render()};
 document.getElementById('saveShift').onclick=()=>{const v=document.getElementById('shiftOverride').value;if(v)data.overrides[key(selected)]=v;else delete data.overrides[key(selected)];persist();render()};
-document.getElementById('addEvent').onclick=()=>{const input=document.getElementById('eventTitle'),timeInput=document.getElementById('eventTime'),title=input.value.trim(),time=timeInput.value;if(!title){alert('予定名を入力してね');return}const event={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:key(selected),title};if(time)event.time=time;data.events.push(event);input.value='';timeInput.value='';persist();render()};
+document.getElementById('addEvent').onclick=()=>{const input=document.getElementById('eventTitle'),timeInput=document.getElementById('eventTime'),endDateInput=document.getElementById('eventEndDate'),endTimeInput=document.getElementById('eventEndTime'),title=input.value.trim(),sd=key(selected),st=timeInput.value,ed=endDateInput.value||sd,et=endTimeInput.value;if(!title){alert('予定名を入力してね');return}const err=validateEventRange(sd,st,ed,et);if(err){alert(err);return}const e={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:sd,title};if(st)e.time=st;if(ed!==sd)e.endDate=ed;if(et)e.endTime=et;data.events.push(e);input.value='';timeInput.value='';endDateInput.value=sd;endTimeInput.value='';persist();render()};
 document.getElementById('export').onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='shiftmate-backup.json';a.click();URL.revokeObjectURL(url)};
 document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
 document.getElementById('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const obj=JSON.parse(await f.text());if(!obj||!Array.isArray(obj.events)||typeof obj.overrides!=='object')throw Error();data={...obj,cycleChanges:Array.isArray(obj.cycleChanges)?obj.cycleChanges:[]};persist();render();alert('バックアップを復元しました')}catch(err){alert('バックアップファイルを読み込めませんでした')}e.target.value=''};
@@ -816,7 +818,7 @@ if('ResizeObserver' in window){
 window.addEventListener('resize',fitGridRows);
 requestAnimationFrame(fitGridRows);
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.13.1').then(()=>navigator.serviceWorker.ready).then(()=>refreshPushStatus()).catch(error=>{console.error('Service worker registration failed:',error);refreshPushStatus();})); }
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.14.0').then(()=>navigator.serviceWorker.ready).then(()=>refreshPushStatus()).catch(error=>{console.error('Service worker registration failed:',error);refreshPushStatus();})); }
 </script>
 </body>
 </html>
