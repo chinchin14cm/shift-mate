@@ -86,7 +86,7 @@ body.reorder-mode{user-select:none}
 #calendarCard .s-off{color:#047857;background:#d1fae5}
 .payment-mark{display:block;font-size:7px;font-weight:850;line-height:1.15;margin-top:1px;white-space:nowrap;overflow:hidden}
 .payment-mark.payday{color:#0f766e}.payment-mark.bonus{color:#b45309}
-#eventForm{display:grid;gap:8px}#eventTitle{width:100%}.event-form-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr);gap:6px;align-items:center}.event-form-row label{font-size:11px;color:#64748b;white-space:nowrap}.event-form-row input{min-width:0;padding:10px 6px;font-size:13px}#addEvent{width:100%}
+#eventForm{display:grid;gap:10px;width:100%;min-width:0}#eventTitle{width:100%;min-width:0;box-sizing:border-box}.event-form-row{display:grid;grid-template-columns:76px minmax(0,1fr);gap:10px;align-items:center;width:100%;min-width:0}.event-form-row label{font-size:14px;color:#64748b;white-space:nowrap}.event-form-row input{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding:12px 10px;font-size:16px}#addEvent{display:block;width:100%;min-height:50px;box-sizing:border-box;margin-top:2px}.event-form-note{margin:0;line-height:1.6}
 @media(max-width:480px){body{padding:9px 8px 26px;column-gap:10px;row-gap:10px}.card{border-radius:15px}#calendarCard .day{min-height:48px}#calendarCard .week,#calendarCard .days{gap:2px}}
 
 @media(max-width:350px){body{grid-template-columns:1fr}.card.size-small{grid-column:1/-1}}
@@ -133,7 +133,7 @@ body.reorder-mode{user-select:none}
  <p class="small description">個別変更はその日だけに適用され、8日周期はずれません。</p>
  <div style="height:10px"></div>
  <div class="sectiontitle">プライベートの予定を追加</div>
- <div id="eventForm"><input id="eventTitle" placeholder="例：デート、通院、誕生日"><div class="event-form-row"><label for="eventTime">開始</label><input id="eventTime" type="time" aria-label="予定の開始時刻"><label for="eventEndDate">終了日</label><input id="eventEndDate" type="date" aria-label="予定の終了日"></div><div class="event-form-row"><label for="eventEndTime">終了</label><input id="eventEndTime" type="time" aria-label="予定の終了時刻"><span></span><button class="primary" id="addEvent">予定を追加</button></div><p class="small" style="margin:0">開始日は選択中の日付。終了日を変えると、複数日にわたる予定にできます。</p></div>
+ <div id="eventForm"><input id="eventTitle" placeholder="例：デート、通院、誕生日"><div class="event-form-row"><label for="eventTime">開始時刻</label><input id="eventTime" type="time" aria-label="予定の開始時刻"></div><div class="event-form-row"><label for="eventEndDate">終了日</label><input id="eventEndDate" type="date" aria-label="予定の終了日"></div><div class="event-form-row"><label for="eventEndTime">終了時刻</label><input id="eventEndTime" type="time" aria-label="予定の終了時刻"></div><button class="primary" id="addEvent">予定を追加</button><p class="small event-form-note">開始日は選択中の日付です。終了日を変えると、複数日にわたる予定にできます。</p></div>
  <div id="eventList"></div>
 </section>
 <section class="card" id="workRulesCard">
