@@ -1,4 +1,4 @@
-const CACHE = 'shiftmate-shell-v1.14.10-network-first-html';const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'shiftmate-shell-v1.14.11-week-span-bars';const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));
