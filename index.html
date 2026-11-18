@@ -91,7 +91,7 @@ body.reorder-mode{user-select:none}
 
 @media(max-width:350px){body{grid-template-columns:1fr}.card.size-small{grid-column:1/-1}}
 
-/* v1.14.9: 全画面の入力欄サイズを強制統一 */
+/* v1.14.10: 全画面の入力欄サイズを強制統一 */
 input:not([type=file]):not([type=checkbox]):not([type=radio]),
 select,
 textarea{
@@ -138,7 +138,7 @@ textarea{height:42px!important;resize:vertical}
 }
 
 
-/* v1.14.9: normalize native iOS date/time controls across the app */
+/* v1.14.10: normalize native iOS date/time controls across the app */
 input[type="date"],
 input[type="time"]{
   -webkit-appearance:none!important;
@@ -164,7 +164,7 @@ input[type="time"]{
 }
 
 
-/* v1.14.9: make multi-day spans visually continuous and directional */
+/* v1.14.10: make multi-day spans visually continuous and directional */
 #calendarCard .event-range{display:flex;align-items:center;gap:1px;min-width:0;height:11px;margin-top:2px;padding:0 2px;background:#ede9fe;color:#5b21b6;font-size:8px;font-weight:800;line-height:11px;white-space:nowrap;overflow:hidden}
 #calendarCard .event-range.start{border-radius:5px 0 0 5px}
 #calendarCard .event-range.middle{border-radius:0}
@@ -181,7 +181,7 @@ input[type="time"]{
 <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
-<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.14.9</span></header>
+<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.14.10</span></header>
 <section class="card" id="orderToolbar">
  <button class="primary" id="startReorder">並び順を編集</button>
  <span class="small" id="orderHint">カードの表示順を自分好みに変更できます。</span>
@@ -262,7 +262,7 @@ input[type="time"]{
 
 <section class="card" id="versionHistory">
  <h2 class="sectiontitle">更新履歴</h2>
- <div class="item" style="display:block"><strong>ver 1.14 - 複数日にわたる予定に対応</strong><small>予定の終了日・終了時刻を設定でき、期間中の各日にカレンダー表示します。既存予定との互換性も維持しました。</small></div><div class="item" style="display:block"><strong>ver 1.13 - 起動日と通知状態の表示を修正</strong>
+ <div class="item" style="display:block"><div class="item" style="display:block"><strong>ver 1.14.10 - 更新反映とキャッシュ制御を改善</strong><small>Service Workerの更新確認を強化し、古い画面が残りにくいようにしました。</small></div><div class="item" style="display:block"><strong>ver 1.14 - 複数日にわたる予定に対応</strong><small>予定の終了日・終了時刻を設定でき、期間中の各日にカレンダー表示します。既存予定との互換性も維持しました。</small></div><div class="item" style="display:block"><strong>ver 1.13 - 起動日と通知状態の表示を修正</strong>
   <small>起動時に当日を選択し、端末の通知許可・購読状態を色付きで表示します。</small>
  </div>
  <div class="item" style="display:block">
@@ -440,7 +440,7 @@ async function enablePushNotifications(){
   if(!keyResponse.ok||!keyData.publicKey)throw new Error('HTTP '+keyResponse.status+' / '+(keyData.error||JSON.stringify(keyData)));
   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
   if(permission!=='granted'){setPushStatus('通知が許可されませんでした。iPhoneの設定からShiftMateの通知を許可してね。');return;}
-  const registration=await navigator.serviceWorker.register('./sw.js?v=1.14.9');
+  const registration=await navigator.serviceWorker.register('./sw.js?v=1.14.10',{updateViaCache:'none'});
   await navigator.serviceWorker.ready;
   const applicationServerKey=base64UrlToUint8Array(keyData.publicKey);
   let subscription=await registration.pushManager.getSubscription();
@@ -902,7 +902,7 @@ if('ResizeObserver' in window){
 window.addEventListener('resize',fitGridRows);
 requestAnimationFrame(fitGridRows);
 
-if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.14.9').then(()=>navigator.serviceWorker.ready).then(()=>refreshPushStatus()).catch(error=>{console.error('Service worker registration failed:',error);refreshPushStatus();})); }
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=1.14.10',{updateViaCache:'none'}).then(()=>navigator.serviceWorker.ready).then(()=>refreshPushStatus()).catch(error=>{console.error('Service worker registration failed:',error);refreshPushStatus();})); }
 </script>
 </body>
 </html>
