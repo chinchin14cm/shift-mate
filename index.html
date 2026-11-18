@@ -90,6 +90,35 @@ body.reorder-mode{user-select:none}
 @media(max-width:480px){body{padding:9px 8px 26px;column-gap:10px;row-gap:10px}.card{border-radius:15px}#calendarCard .day{min-height:48px}#calendarCard .week,#calendarCard .days{gap:2px}}
 
 @media(max-width:350px){body{grid-template-columns:1fr}.card.size-small{grid-column:1/-1}}
+
+/* v1.14.4: 全画面の入力欄サイズを強制統一 */
+input:not([type=file]):not([type=checkbox]):not([type=radio]),
+select,
+textarea{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  height:42px!important;
+  min-height:42px!important;
+  max-height:42px!important;
+  box-sizing:border-box!important;
+  padding:7px 10px!important;
+  border:1px solid #d7deea!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  color:#172033!important;
+  font:inherit!important;
+  line-height:1.2!important;
+}
+textarea{height:42px!important;resize:vertical}
+.row input:not([type=file]),.row select{flex:1 1 0!important}
+#eventForm{display:grid!important;gap:5px!important;width:100%!important;min-width:0!important}
+#eventForm .event-form-row{display:grid!important;grid-template-columns:76px minmax(0,1fr)!important;gap:8px!important;align-items:center!important;width:100%!important;min-width:0!important}
+#eventForm label{font-size:12px!important;color:#64748b!important;white-space:nowrap!important}
+#eventForm input{width:100%!important;height:42px!important;min-height:42px!important;max-height:42px!important}
+#eventForm #addEvent{height:42px!important;min-height:42px!important;max-height:42px!important}
+
 </style>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -98,7 +127,7 @@ body.reorder-mode{user-select:none}
 <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
-<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.14.3</span></header>
+<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.14.4</span></header>
 <section class="card" id="orderToolbar">
  <button class="primary" id="startReorder">並び順を編集</button>
  <span class="small" id="orderHint">カードの表示順を自分好みに変更できます。</span>
@@ -357,7 +386,7 @@ async function enablePushNotifications(){
   if(!keyResponse.ok||!keyData.publicKey)throw new Error('HTTP '+keyResponse.status+' / '+(keyData.error||JSON.stringify(keyData)));
   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
   if(permission!=='granted'){setPushStatus('通知が許可されませんでした。iPhoneの設定からShiftMateの通知を許可してね。');return;}
-  const registration=await navigator.serviceWorker.register('./sw.js?v=1.14.2');
+  const registration=await navigator.serviceWorker.register('./sw.js?v=1.14.4');
   await navigator.serviceWorker.ready;
   const applicationServerKey=base64UrlToUint8Array(keyData.publicKey);
   let subscription=await registration.pushManager.getSubscription();
