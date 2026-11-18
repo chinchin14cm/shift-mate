@@ -548,7 +548,7 @@ function render(){
    bar.style.gridColumn=(firstCol+1)+" / "+(lastCol+2);bar.style.gridRow=String(lane+1);bar.title=e.title;
    bar.textContent=(e.date>=key(weekStart)&&e.time?e.time+" ":"")+e.title;lanes.appendChild(bar);
   });
-  lanes.style.gridTemplateRows="repeat("+Math.max(1,laneEnds.length)+",14px)";row.appendChild(lanes);
+  if(laneEnds.length){lanes.style.gridTemplateRows="repeat("+laneEnds.length+",14px)";}else{lanes.style.display="none";}row.appendChild(lanes);
   const days=document.createElement("div");days.className="calendar-week-days";
   for(let col=0;col<7;col++){
    const d=addDays(weekStart,col),k=key(d),shift=shiftFor(d);
