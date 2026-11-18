@@ -91,7 +91,7 @@ body.reorder-mode{user-select:none}
 
 @media(max-width:350px){body{grid-template-columns:1fr}.card.size-small{grid-column:1/-1}}
 
-/* v1.14.6: 全画面の入力欄サイズを強制統一 */
+/* v1.14.7: 全画面の入力欄サイズを強制統一 */
 input:not([type=file]):not([type=checkbox]):not([type=radio]),
 select,
 textarea{
@@ -138,7 +138,7 @@ textarea{height:42px!important;resize:vertical}
 }
 
 
-/* v1.14.6: normalize native iOS date/time controls across the app */
+/* v1.14.7: normalize native iOS date/time controls across the app */
 input[type="date"],
 input[type="time"]{
   -webkit-appearance:none!important;
@@ -163,6 +163,9 @@ input[type="time"]{
   vertical-align:middle!important;
 }
 
+
+/* v1.14.7: multi-day event direction markers */
+#calendarCard .eventdot{font-size:9px;font-weight:750;line-height:1.2}
 </style>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -171,7 +174,7 @@ input[type="time"]{
 <link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
-<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.14.6</span></header>
+<header><div><h1>ShiftMate</h1><div class="sub">勤務もプライベートも、ひとつのカレンダーに。</div></div><span class="pill">v1.14.7</span></header>
 <section class="card" id="orderToolbar">
  <button class="primary" id="startReorder">並び順を編集</button>
  <span class="small" id="orderHint">カードの表示順を自分好みに変更できます。</span>
@@ -206,7 +209,7 @@ input[type="time"]{
  <p class="small description">個別変更はその日だけに適用され、8日周期はずれません。</p>
  <div style="height:10px"></div>
  <div class="sectiontitle">プライベートの予定を追加</div>
- <div id="eventForm"><input id="eventTitle" placeholder="例：デート、通院、誕生日"><div class="event-form-row"><label for="eventTime">開始時刻</label><input id="eventTime" type="time" aria-label="予定の開始時刻"></div><div class="event-form-row"><label for="eventEndDate">終了日</label><input id="eventEndDate" type="date" aria-label="予定の終了日"></div><div class="event-form-row"><label for="eventEndTime">終了時刻</label><input id="eventEndTime" type="time" aria-label="予定の終了時刻"></div><button class="primary" id="addEvent">予定を追加</button><p class="small event-form-note">開始日は選択中の日付です。終了日を変えると、複数日にわたる予定にできます。</p></div>
+ <div id="eventForm"><input id="eventTitle" placeholder="例：デート、通院、誕生日"><div class="event-form-row"><label for="eventStartDate">開始日</label><input id="eventStartDate" type="date" aria-label="予定の開始日"></div><div class="event-form-row"><label for="eventTime">開始時刻</label><input id="eventTime" type="time" aria-label="予定の開始時刻"></div><div class="event-form-row"><label for="eventEndDate">終了日</label><input id="eventEndDate" type="date" aria-label="予定の終了日"></div><div class="event-form-row"><label for="eventEndTime">終了時刻</label><input id="eventEndTime" type="time" aria-label="予定の終了時刻"></div><button class="primary" id="addEvent">予定を追加</button><p class="small event-form-note">開始日・終了日と時刻を指定できます。複数日にわたる予定はカレンダーに矢印で表示します。</p></div>
  <div id="eventList"></div>
 </section>
 <section class="card" id="workRulesCard">
@@ -430,7 +433,7 @@ async function enablePushNotifications(){
   if(!keyResponse.ok||!keyData.publicKey)throw new Error('HTTP '+keyResponse.status+' / '+(keyData.error||JSON.stringify(keyData)));
   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
   if(permission!=='granted'){setPushStatus('通知が許可されませんでした。iPhoneの設定からShiftMateの通知を許可してね。');return;}
-  const registration=await navigator.serviceWorker.register('./sw.js?v=1.14.6');
+  const registration=await navigator.serviceWorker.register('./sw.js?v=1.14.7');
   await navigator.serviceWorker.ready;
   const applicationServerKey=base64UrlToUint8Array(keyData.publicKey);
   let subscription=await registration.pushManager.getSubscription();
@@ -518,7 +521,7 @@ function render(){
   const cls=s.startsWith('日勤')?'s-day':s.startsWith('夜勤')?'s-night':s==='明け'?'s-after':'s-off';
   const ev=data.events.filter(e=>eventCoversDate(e,k)),payments=paymentLabels(d);
   const paymentHtml=payments.map(label=>'<div class="payment-mark '+(label.includes('ボーナス')?'bonus':'payday')+'">'+label+'</div>').join('');
-  cell.innerHTML=`<div class="num">${d.getDate()}</div><div class="shift ${cls}">${s.replace('夜勤・','夜勤 ')}</div>${paymentHtml}${ev.slice(0,1).map(e=>`<div class="eventdot">${e.date===k?'●':'↳'} ${e.date===k&&e.time?escapeHtml(e.time)+' ':''}${escapeHtml(e.title)}</div>`).join('')}${ev.length>1?`<div class="eventdot">ほか${ev.length-1}件</div>`:''}`;
+  cell.innerHTML=`<div class="num">${d.getDate()}</div><div class="shift ${cls}">${s.replace('夜勤・','夜勤 ')}</div>${paymentHtml}${ev.slice(0,1).map(e=>{const end=eventEndDate(e),marker=e.date===end?'●':e.date===k?'→':end===k?'←':'↔';return `<div class="eventdot" title="${escapeHtml(e.title)}">${marker} ${e.date===k&&e.time?escapeHtml(e.time)+' ':''}${escapeHtml(e.title)}</div>`}).join('')}${ev.length>1?`<div class="eventdot">ほか${ev.length-1}件</div>`:''}`;
   cell.addEventListener('click',()=>{selected=d;render();});cal.appendChild(cell);
  }
  renderSelected();
@@ -529,7 +532,7 @@ function renderSelected(){
  document.getElementById('selectedTitle').textContent=`${selected.getFullYear()}年${selected.getMonth()+1}月${selected.getDate()}日`;
  document.getElementById('selectedInfo').innerHTML=`基本勤務：<b>${base}</b>　${data.overrides[k]?'（個別変更あり）':'（通常ルール）'}<br>現在の勤務：<b>${current}</b>${payments.length?'<br><b style="color:#0f766e">'+payments.join('・')+'</b>':''}`;
  document.getElementById('shiftOverride').value=data.overrides[k]||'';
- document.getElementById('eventEndDate').value=k;
+ document.getElementById('eventStartDate').value=k;document.getElementById('eventEndDate').value=k;
  const list=document.getElementById('eventList');const ev=data.events.filter(e=>eventCoversDate(e,k));list.innerHTML=ev.length?'<div class="sectiontitle" style="margin-top:15px">この日の予定</div>':'';
  ev.forEach(e=>{const div=document.createElement('div');div.className='item';const ed=eventEndDate(e);const period=e.date===ed?e.date:e.date+' 〜 '+ed;div.innerHTML='<div><strong>'+(e.time?escapeHtml(e.time)+'　':'')+escapeHtml(e.title)+'</strong><small>'+period+(e.endTime?' ／ 終了 '+escapeHtml(e.endTime):'')+'</small></div><div class="actions"><button data-edit="'+e.id+'">編集</button><button class="danger" data-del="'+e.id+'">削除</button></div>';list.appendChild(div)});
  list.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{data.events=data.events.filter(e=>e.id!==b.dataset.del);persist();render()});
@@ -539,7 +542,7 @@ document.getElementById('prev').onclick=()=>{view=new Date(view.getFullYear(),vi
 document.getElementById('next').onclick=()=>{view=new Date(view.getFullYear(),view.getMonth()+1,1);render()};
 document.getElementById('today').onclick=()=>{const n=new Date();view=new Date(n.getFullYear(),n.getMonth(),1);selected=n;render()};
 document.getElementById('saveShift').onclick=()=>{const v=document.getElementById('shiftOverride').value;if(v)data.overrides[key(selected)]=v;else delete data.overrides[key(selected)];persist();render()};
-document.getElementById('addEvent').onclick=()=>{const input=document.getElementById('eventTitle'),timeInput=document.getElementById('eventTime'),endDateInput=document.getElementById('eventEndDate'),endTimeInput=document.getElementById('eventEndTime'),title=input.value.trim(),sd=key(selected),st=timeInput.value,ed=endDateInput.value||sd,et=endTimeInput.value;if(!title){alert('予定名を入力してね');return}const err=validateEventRange(sd,st,ed,et);if(err){alert(err);return}const e={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:sd,title};if(st)e.time=st;if(ed!==sd)e.endDate=ed;if(et)e.endTime=et;data.events.push(e);input.value='';timeInput.value='';endDateInput.value=sd;endTimeInput.value='';persist();render()};
+document.getElementById('addEvent').onclick=()=>{const input=document.getElementById('eventTitle'),startDateInput=document.getElementById('eventStartDate'),timeInput=document.getElementById('eventTime'),endDateInput=document.getElementById('eventEndDate'),endTimeInput=document.getElementById('eventEndTime'),title=input.value.trim(),sd=startDateInput.value||key(selected),st=timeInput.value,ed=endDateInput.value||sd,et=endTimeInput.value;if(!title){alert('予定名を入力してね');return}const err=validateEventRange(sd,st,ed,et);if(err){alert(err);return}const e={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),date:sd,title};if(st)e.time=st;if(ed!==sd)e.endDate=ed;if(et)e.endTime=et;data.events.push(e);input.value='';timeInput.value='';startDateInput.value=sd;endDateInput.value=sd;endTimeInput.value='';persist();render()};
 document.getElementById('export').onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='shiftmate-backup.json';a.click();URL.revokeObjectURL(url)};
 document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
 document.getElementById('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const obj=JSON.parse(await f.text());if(!obj||!Array.isArray(obj.events)||typeof obj.overrides!=='object')throw Error();data={...obj,cycleChanges:Array.isArray(obj.cycleChanges)?obj.cycleChanges:[]};persist();render();alert('バックアップを復元しました')}catch(err){alert('バックアップファイルを読み込めませんでした')}e.target.value=''};
