@@ -1,4 +1,4 @@
-const CACHE = 'shiftmate-shell-v1.14.5-ios-date-time-height';;;const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'shiftmate-shell-v1.14.6-unified-date-time-controls';;;;const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));
